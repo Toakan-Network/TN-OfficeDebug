@@ -179,6 +179,12 @@ window.logDebug('Context description', {
 - **Commit Frequency**: Commit after each logical unit of work, never leave uncommitted changes
 - **Change Documentation**: Each commit should represent a complete, testable change
 
+### Agent Instruction Updates
+- **Context Learning**: When additional context or guidance is provided during development sessions, update the AI agent instruction files (AGENTS.md and .github/copilot-instructions.md) to capture these learnings
+- **Pattern Recognition**: Document new patterns, best practices, or requirements that emerge during development
+- **Instruction Refinement**: Keep agent instructions current with evolving project needs and discovered workflows
+- **Knowledge Preservation**: Ensure future AI assistance benefits from lessons learned in previous sessions
+
 ## 🚨 Critical Lessons Learned
 
 ### Major Issues Resolved

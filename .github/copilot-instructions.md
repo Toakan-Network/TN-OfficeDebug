@@ -268,6 +268,19 @@ git commit -m "type(scope): description"
 # 3. No exceptions - every change must be committed
 ```
 
+### Agent Instruction Maintenance
+```bash
+# When new context or patterns emerge during development:
+# 1. Update AGENTS.md and/or copilot-instructions.md with new learnings
+# 2. Document additional context, patterns, or requirements
+# 3. Commit instruction updates immediately
+# 4. Ensure future AI sessions benefit from current session learnings
+
+# Example:
+git add AGENTS.md .github/copilot-instructions.md
+git commit -m "docs: capture new development pattern from session context"
+```
+
 ### Configuration Updates
 ```javascript
 // When updating manifest or configuration files:

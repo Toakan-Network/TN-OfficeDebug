@@ -283,6 +283,20 @@ git add AGENTS.md .github/copilot-instructions.md
 git commit -m "docs: capture new development pattern from session context"
 ```
 
+### Verification and Problem-Solving Standards
+```javascript
+// CRITICAL: Follow these standards for all AI assistance
+// 1. Do not assume or guess - only use verified sources for information
+// 2. Always show sources when providing factual information
+// 3. Do not repeat yourself when solving issues - try different approaches
+// 4. If a problem cannot be resolved, inform user clearly rather than continuing
+
+// Example of proper source citation:
+// Source: Microsoft Learn documentation - [specific URL]
+// Source: netstat command output - [command result]
+// Source: project file analysis - [file path and content]
+```
+
 ### Configuration Updates
 ```javascript
 // When updating manifest or configuration files:
@@ -308,6 +322,16 @@ git commit -m "docs: capture new development pattern from session context"
 // - Restricted document access
 // - Network connectivity issues
 // - Unsupported Office versions
+```
+
+### Office Cache Troubleshooting
+```bash
+# Office applications cache manifest locations - clear cache after moving files
+# Remove Office add-in cache folder when getting 404 errors
+Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Office\16.0\Wef" -Recurse -Force -ErrorAction SilentlyContinue
+
+# Common scenario: manifest moved from root to /config/ directory
+# Office still looks for old location until cache is cleared
 ```
 
 ### Development Testing

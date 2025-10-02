@@ -1,6 +1,14 @@
 # TN-OfficeDebug - AI Agent Instructions
 
-This document provides comprehensive context and instructions for AI agents working on the TN-OfficeDebug project. It captures the project's specific requirements, architecture decisions, lessons learned, and development patterns established during the initial development phase.
+This document provides comprehensive context and instructions for AI agents working on the TN-OfficeDebug project. It captures the project's specific requirements, ar#### 5. Web Server Configuration
+**Problem**: CORS issues and SSL conflicts with Node.js development
+**Solution**: Migration to IIS with proper CORS configuration
+**Prevention**: Use IIS for enterprise-ready hosting
+
+#### 6. Office Manifest Caching
+**Problem**: 404 errors when manifest file is moved to different directory location
+**Solution**: Clear Office cache - Office applications cache manifest locations from previous sideloading
+**Prevention**: Clear cache after moving manifest files or changing project structureecture decisions, lessons learned, and development patterns established during the initial development phase.
 
 ## 📋 Project Context
 
@@ -186,6 +194,12 @@ window.logDebug('Context description', {
 - **Pattern Recognition**: Document new patterns, best practices, or requirements that emerge during development
 - **Instruction Refinement**: Keep agent instructions current with evolving project needs and discovered workflows
 - **Knowledge Preservation**: Ensure future AI assistance benefits from lessons learned in previous sessions
+
+### Verification and Problem-Solving Standards
+- **No Assumptions**: Do not assume or guess - only use verified sources for information
+- **Show Sources**: Always cite and show sources when providing factual information
+- **No Repetition**: Do not repeat yourself when solving issues - try different approaches
+- **Acknowledge Limitations**: If a problem occurs and cannot be resolved, inform the user clearly rather than continuing ineffective attempts
 
 ## 🚨 Critical Lessons Learned
 

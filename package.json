@@ -1,0 +1,27 @@
+{
+  "name": "tn-officedebug",
+  "version": "1.0.0",
+  "description": "A tool to display various hidden settings / debug information in an Office.js window",
+  "main": "taskpane.html",
+  "scripts": {
+    "start": "office-addin-debugging start manifest.xml",
+    "stop": "office-addin-debugging stop manifest.xml",
+    "validate": "office-addin-manifest validate manifest.xml"
+  },
+  "keywords": [
+    "office-add-in",
+    "word",
+    "debug",
+    "diagnostic"
+  ],
+  "author": "Toakan Network",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Toakan-Network/TN-OfficeDebug.git"
+  },
+  "devDependencies": {
+    "office-addin-debugging": "^5.0.0",
+    "office-addin-manifest": "^1.12.0"
+  }
+}

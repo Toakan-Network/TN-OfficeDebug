@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Office Debug Tool</title>
+    
+    <!-- Office JavaScript API -->
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    
+    <link rel="stylesheet" href="taskpane.css" />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Office Debug Information</h1>
+            <button id="refresh-btn" class="refresh-btn">🔄 Refresh</button>
+        </header>
+
+        <div class="content">
+            <!-- Office Environment Section -->
+            <section class="info-section">
+                <h2>Office Environment</h2>
+                <div id="office-info" class="info-content">
+                    <div class="loading">Loading...</div>
+                </div>
+            </section>
+
+            <!-- Document Information Section -->
+            <section class="info-section">
+                <h2>Document Information</h2>
+                <div id="document-info" class="info-content">
+                    <div class="loading">Loading...</div>
+                </div>
+            </section>
+
+            <!-- Add-ins Information Section -->
+            <section class="info-section">
+                <h2>Add-ins Information</h2>
+                <div id="addins-info" class="info-content">
+                    <div class="loading">Loading...</div>
+                </div>
+            </section>
+
+            <!-- System Information Section -->
+            <section class="info-section">
+                <h2>System Information</h2>
+                <div id="system-info" class="info-content">
+                    <div class="loading">Loading...</div>
+                </div>
+            </section>
+
+            <!-- Context Information Section -->
+            <section class="info-section">
+                <h2>Office Context Details</h2>
+                <div id="context-info" class="info-content">
+                    <div class="loading">Loading...</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="taskpane.js"></script>
+</body>
+</html>

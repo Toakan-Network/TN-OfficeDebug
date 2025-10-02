@@ -10,9 +10,32 @@
 <body>
     <script>
         Office.onReady(() => {
-            // This file is required for ribbon commands but doesn't need implementation
-            // for this debug tool
+            // Register the toggle function
         });
+
+        // Toggle task pane visibility
+        function toggleTaskPane(event) {
+            // Check if task pane is already open
+            Office.ribbon.requestUpdate({
+                tabs: [{
+                    id: "TabHome",
+                    controls: [{
+                        id: "TaskpaneButton",
+                        enabled: true
+                    }]
+                }]
+            });
+
+            // Use Office.addin.showAsTaskpane to show or toggle the pane
+            Office.addin.showAsTaskpane();
+            
+            // Complete the event
+            event.completed();
+        }
+
+        // Make function globally available
+        Office.actions = Office.actions || {};
+        Office.actions.toggleTaskPane = toggleTaskPane;
     </script>
 </body>
 </html>

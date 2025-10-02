@@ -22,6 +22,15 @@ This Office Add-in provides IT professionals and developers with comprehensive d
 
 📊 **Comprehensive Data**: Displays all available diagnostic information accessible through Office.js APIs
 
+## Project Structure
+
+- **`/src`** - Source code files (HTML, CSS, JS)
+- **`/config`** - Configuration files (manifest.xml, web.config)  
+- **`/docs`** - Documentation and guides
+- **`/assets`** - Static assets (icons, images)
+
+See `PROJECT_STRUCTURE.md` for detailed information.
+
 ## Installation
 
 ### Option 1: Sideload in Office Online (Web)
@@ -29,7 +38,7 @@ This Office Add-in provides IT professionals and developers with comprehensive d
 1. Open Word Online (https://office.com/launch/word)
 2. Create a new document
 3. Go to **Insert** > **Add-ins** > **Upload My Add-in**
-4. Click **Browse** and select the `manifest.xml` file
+4. Click **Browse** and select the `config/manifest.xml` file
 5. The add-in will appear in the ribbon
 
 ### Option 2: Sideload in Office Desktop

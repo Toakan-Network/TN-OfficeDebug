@@ -10,27 +10,45 @@
 <body>
     <script>
         Office.onReady(() => {
-            // Register the toggle function
+            // Register visibility change handler to track state
+            if (Office.addin && Office.addin.onVisibilityModeChanged) {
+                Office.addin.onVisibilityModeChanged((message) => {
+                    isTaskPaneVisible = (message.visibilityMode === Office.VisibilityMode.taskpane);
+                }).catch(error => {
+                    console.log('Visibility change handler not available:', error);
+                });
+            }
         });
+
+        // Track task pane visibility state
+        let isTaskPaneVisible = false;
 
         // Toggle task pane visibility
         function toggleTaskPane(event) {
-            // Check if task pane is already open
-            Office.ribbon.requestUpdate({
-                tabs: [{
-                    id: "TabHome",
-                    controls: [{
-                        id: "TaskpaneButton",
-                        enabled: true
-                    }]
-                }]
-            });
-
-            // Use Office.addin.showAsTaskpane to show or toggle the pane
-            Office.addin.showAsTaskpane();
-            
-            // Complete the event
-            event.completed();
+            try {
+                if (isTaskPaneVisible) {
+                    // Hide the task pane
+                    Office.addin.hide().then(() => {
+                        isTaskPaneVisible = false;
+                        event.completed();
+                    }).catch(error => {
+                        console.error('Error hiding task pane:', error);
+                        event.completed();
+                    });
+                } else {
+                    // Show the task pane
+                    Office.addin.showAsTaskpane().then(() => {
+                        isTaskPaneVisible = true;
+                        event.completed();
+                    }).catch(error => {
+                        console.error('Error showing task pane:', error);
+                        event.completed();
+                    });
+                }
+            } catch (error) {
+                console.error('Error in toggleTaskPane:', error);
+                event.completed();
+            }
         }
 
         // Make function globally available

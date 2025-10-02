@@ -1,18 +1,42 @@
 /* global Office */
 
+// Enhanced Office.onReady with debugging
 Office.onReady((info) => {
-  if (info.host === Office.HostType.Word) {
-    document.getElementById('refresh-btn').onclick = loadAllDebugInfo;
-    loadAllDebugInfo();
+  try {
+    window.logDebug('Office.onReady called', { host: info?.host, platform: info?.platform });
+    
+    if (info.host === Office.HostType.Word) {
+      window.logDebug('Detected Word host');
+      const refreshBtn = document.getElementById('refresh-btn');
+      if (refreshBtn) {
+        refreshBtn.onclick = loadAllDebugInfo;
+        window.logDebug('Refresh button click handler attached');
+      } else {
+        window.logDebug('ERROR: refresh-btn element not found');
+      }
+      loadAllDebugInfo();
+    } else {
+      window.logDebug('Host is not Word', { actualHost: info.host });
+    }
+  } catch (error) {
+    window.logDebug('ERROR in Office.onReady', { error: error.message, stack: error.stack });
   }
+}).catch(error => {
+  window.logDebug('ERROR: Office.onReady failed', { error: error.message, stack: error.stack });
 });
 
 function loadAllDebugInfo() {
-  loadOfficeInfo();
-  loadDocumentInfo();
-  loadAddinsInfo();
-  loadSystemInfo();
-  loadContextInfo();
+  try {
+    window.logDebug('Starting loadAllDebugInfo');
+    loadOfficeInfo();
+    loadDocumentInfo();
+    loadAddinsInfo();
+    loadSystemInfo();
+    loadContextInfo();
+    window.logDebug('Completed loadAllDebugInfo');
+  } catch (error) {
+    window.logDebug('ERROR in loadAllDebugInfo', { error: error.message, stack: error.stack });
+  }
 }
 
 function createInfoRow(label, value, isCode = false) {
@@ -35,9 +59,11 @@ function createInfoRow(label, value, isCode = false) {
 
 function loadOfficeInfo() {
   const container = document.getElementById('office-info');
-  container.innerHTML = '';
-
+  
   try {
+    window.logDebug('Loading Office info');
+    container.innerHTML = '';
+
     // Office.context information
     container.appendChild(createInfoRow('Host', Office.context.host));
     container.appendChild(createInfoRow('Platform', Office.context.platform));
@@ -87,70 +113,81 @@ function loadDocumentInfo() {
   const container = document.getElementById('document-info');
   container.innerHTML = '';
 
-  Word.run(async (context) => {
-    try {
-      const doc = context.document;
-      const properties = doc.properties;
-      const body = doc.body;
+  try {
+    window.logDebug('Loading Document info');
+    
+    Word.run(async (context) => {
+      try {
+        const doc = context.document;
+        const properties = doc.properties;
+        const body = doc.body;
+        
+        // Load properties
+        properties.load('title,subject,author,keywords,comments,template,lastAuthor,revisionNumber,applicationName,lastPrintDate,creationDate,lastSaveTime');
+        body.load('text,type');
+        
+        await context.sync();
+        
+        window.logDebug('Document properties loaded successfully');
+        
+        // Document URL
+        if (Office.context.document && Office.context.document.url) {
+          container.appendChild(createInfoRow('Document URL', Office.context.document.url));
+        }
+        
+        // Document Mode
+        if (Office.context.document && Office.context.document.mode) {
+          container.appendChild(createInfoRow('Document Mode', Office.context.document.mode));
+        }
       
-      // Load properties
-      properties.load('title,subject,author,keywords,comments,template,lastAuthor,revisionNumber,applicationName,lastPrintDate,creationDate,lastSaveTime');
-      body.load('text,type');
-      
-      await context.sync();
-      
-      // Document URL
-      if (Office.context.document && Office.context.document.url) {
-        container.appendChild(createInfoRow('Document URL', Office.context.document.url));
+        
+        // Built-in Document Properties
+        container.appendChild(createInfoRow('Title', properties.title || 'Not set'));
+        container.appendChild(createInfoRow('Subject', properties.subject || 'Not set'));
+        container.appendChild(createInfoRow('Author', properties.author || 'Not set'));
+        container.appendChild(createInfoRow('Keywords', properties.keywords || 'Not set'));
+        container.appendChild(createInfoRow('Comments', properties.comments || 'Not set'));
+        container.appendChild(createInfoRow('Template', properties.template || 'Not set'));
+        container.appendChild(createInfoRow('Last Author', properties.lastAuthor || 'Not set'));
+        container.appendChild(createInfoRow('Revision Number', properties.revisionNumber));
+        container.appendChild(createInfoRow('Application Name', properties.applicationName));
+        
+        // Dates
+        if (properties.creationDate) {
+          container.appendChild(createInfoRow('Creation Date', new Date(properties.creationDate).toLocaleString()));
+        }
+        if (properties.lastSaveTime) {
+          container.appendChild(createInfoRow('Last Save Time', new Date(properties.lastSaveTime).toLocaleString()));
+        }
+        if (properties.lastPrintDate) {
+          container.appendChild(createInfoRow('Last Print Date', new Date(properties.lastPrintDate).toLocaleString()));
+        }
+        
+        // Document statistics
+        const paragraphs = body.paragraphs;
+        paragraphs.load('items');
+        await context.sync();
+        
+        container.appendChild(createInfoRow('Paragraph Count', paragraphs.items.length));
+        
+        // Text length (approximate)
+        const textLength = body.text ? body.text.length : 0;
+        container.appendChild(createInfoRow('Character Count (approx)', textLength));
+        
+      } catch (error) {
+        window.logDebug('Error in Word.run for document info', { error: error.message });
+        container.innerHTML = `<div class="error">Error loading document info: ${error.message}</div>`;
       }
-      
-      // Document Mode
-      if (Office.context.document && Office.context.document.mode) {
-        container.appendChild(createInfoRow('Document Mode', Office.context.document.mode));
-      }
-      
-      // Built-in Document Properties
-      container.appendChild(createInfoRow('Title', properties.title || 'Not set'));
-      container.appendChild(createInfoRow('Subject', properties.subject || 'Not set'));
-      container.appendChild(createInfoRow('Author', properties.author || 'Not set'));
-      container.appendChild(createInfoRow('Keywords', properties.keywords || 'Not set'));
-      container.appendChild(createInfoRow('Comments', properties.comments || 'Not set'));
-      container.appendChild(createInfoRow('Template', properties.template || 'Not set'));
-      container.appendChild(createInfoRow('Last Author', properties.lastAuthor || 'Not set'));
-      container.appendChild(createInfoRow('Revision Number', properties.revisionNumber));
-      container.appendChild(createInfoRow('Application Name', properties.applicationName));
-      
-      // Dates
-      if (properties.creationDate) {
-        container.appendChild(createInfoRow('Creation Date', new Date(properties.creationDate).toLocaleString()));
-      }
-      if (properties.lastSaveTime) {
-        container.appendChild(createInfoRow('Last Save Time', new Date(properties.lastSaveTime).toLocaleString()));
-      }
-      if (properties.lastPrintDate) {
-        container.appendChild(createInfoRow('Last Print Date', new Date(properties.lastPrintDate).toLocaleString()));
-      }
-      
-      // Document statistics
-      const paragraphs = body.paragraphs;
-      paragraphs.load('items');
-      await context.sync();
-      
-      container.appendChild(createInfoRow('Paragraph Count', paragraphs.items.length));
-      
-      // Text length (approximate)
-      const textLength = body.text ? body.text.length : 0;
-      container.appendChild(createInfoRow('Character Count (approx)', textLength));
-      
-    } catch (error) {
-      container.innerHTML = `<div class="error">Error loading document info: ${error.message}</div>`;
-    }
-  }).catch((error) => {
+    }).catch((error) => {
+      window.logDebug('Word.run failed for document info', { error: error.message });
+      container.innerHTML = `<div class="error">Word.run Error: ${error.message}</div>`;
+    });
+    
+  } catch (error) {
+    window.logDebug('ERROR in loadDocumentInfo', { error: error.message });
     container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-  });
-}
-
-function loadAddinsInfo() {
+  }
+}function loadAddinsInfo() {
   const container = document.getElementById('addins-info');
   container.innerHTML = '';
 

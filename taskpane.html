@@ -52,54 +52,83 @@
         </header>
 
         <div class="content">
-            <!-- Debug Output Section -->
-            <section class="info-section">
-                <h2>Debug Output</h2>
-                <div id="debug-output" class="info-content debug-output" style="max-height: 200px; overflow-y: auto; background: #f5f5f5; padding: 10px; font-family: monospace; font-size: 12px;">
-                    <div>Debug console initialized...</div>
+            <!-- Tab Content Area -->
+            <div class="tab-content-wrapper">
+                <!-- Office Environment Tab Content -->
+                <div id="tab-office" class="tab-content active">
+                    <section class="info-section">
+                        <h2>Office Environment</h2>
+                        <div id="office-info" class="info-content">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </section>
                 </div>
-                <button onclick="clearDebugLog()" style="margin-top: 5px;">Clear Debug Log</button>
-            </section>
 
-            <!-- Office Environment Section -->
-            <section class="info-section">
-                <h2>Office Environment</h2>
-                <div id="office-info" class="info-content">
-                    <div class="loading">Loading...</div>
+                <!-- Document Information Tab Content -->
+                <div id="tab-document" class="tab-content">
+                    <section class="info-section">
+                        <h2>Document Information</h2>
+                        <div id="document-info" class="info-content">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </section>
                 </div>
-            </section>
 
-            <!-- Document Information Section -->
-            <section class="info-section">
-                <h2>Document Information</h2>
-                <div id="document-info" class="info-content">
-                    <div class="loading">Loading...</div>
+                <!-- System Information Tab Content -->
+                <div id="tab-system" class="tab-content">
+                    <section class="info-section">
+                        <h2>System Information</h2>
+                        <div id="system-info" class="info-content">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </section>
                 </div>
-            </section>
 
-            <!-- Add-ins Information Section -->
-            <section class="info-section">
-                <h2>Add-ins Information</h2>
-                <div id="addins-info" class="info-content">
-                    <div class="loading">Loading...</div>
+                <!-- Add-ins Information Tab Content -->
+                <div id="tab-addins" class="tab-content">
+                    <section class="info-section">
+                        <h2>Add-ins Information</h2>
+                        <div id="addins-info" class="info-content">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </section>
                 </div>
-            </section>
 
-            <!-- System Information Section -->
-            <section class="info-section">
-                <h2>System Information</h2>
-                <div id="system-info" class="info-content">
-                    <div class="loading">Loading...</div>
+                <!-- Debug Output Tab Content -->
+                <div id="tab-debug" class="tab-content">
+                    <section class="info-section">
+                        <h2>Debug Output</h2>
+                        <div id="debug-output" class="info-content debug-output" style="max-height: 400px; overflow-y: auto; background: #f5f5f5; padding: 10px; font-family: monospace; font-size: 12px;">
+                            <div>Debug console initialized...</div>
+                        </div>
+                        <button onclick="clearDebugLog()" style="margin-top: 5px;">Clear Debug Log</button>
+                    </section>
                 </div>
-            </section>
+            </div>
 
-            <!-- Context Information Section -->
-            <section class="info-section">
-                <h2>Office Context Details</h2>
-                <div id="context-info" class="info-content">
-                    <div class="loading">Loading...</div>
-                </div>
-            </section>
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button class="tab-button active" data-tab="tab-office">
+                    <span class="tab-icon">🏢</span>
+                    <span class="tab-label">Office Environment</span>
+                </button>
+                <button class="tab-button" data-tab="tab-document">
+                    <span class="tab-icon">📄</span>
+                    <span class="tab-label">Document Info</span>
+                </button>
+                <button class="tab-button" data-tab="tab-system">
+                    <span class="tab-icon">💻</span>
+                    <span class="tab-label">System Info</span>
+                </button>
+                <button class="tab-button" data-tab="tab-addins">
+                    <span class="tab-icon">🧩</span>
+                    <span class="tab-label">Add-in Info</span>
+                </button>
+                <button class="tab-button" data-tab="tab-debug">
+                    <span class="tab-icon">🐛</span>
+                    <span class="tab-label">Debug Output</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -110,6 +139,37 @@
             if (debugContainer) {
                 debugContainer.innerHTML = '<div>Debug log cleared...</div>';
             }
+        }
+        
+        // Tab switching functionality
+        function initializeTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons and contents
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    
+                    // Show corresponding tab content
+                    const tabId = button.getAttribute('data-tab');
+                    const tabContent = document.getElementById(tabId);
+                    if (tabContent) {
+                        tabContent.classList.add('active');
+                    }
+                });
+            });
+        }
+        
+        // Initialize tabs when DOM is loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeTabs);
+        } else {
+            initializeTabs();
         }
         
         // Log that HTML is loaded

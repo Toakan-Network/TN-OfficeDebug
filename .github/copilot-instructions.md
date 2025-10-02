@@ -256,6 +256,18 @@ docs: update troubleshooting guide with new error patterns
 refactor(security): improve domain detection reliability
 ```
 
+### Mandatory Git Workflow
+```bash
+# ALWAYS commit after making changes - NEVER leave work uncommitted
+git add .
+git commit -m "type(scope): description"
+
+# Examples of required workflow:
+# 1. Make file changes
+# 2. Immediately git add and commit
+# 3. No exceptions - every change must be committed
+```
+
 ### Configuration Updates
 ```javascript
 // When updating manifest or configuration files:

@@ -171,10 +171,13 @@ window.logDebug('Context description', {
 });
 ```
 
-### Git Workflow
+### Git Workflow Requirements
+- **Mandatory Commits**: ALWAYS git add and commit after each file change or set of related changes
 - **Conventional Commits**: feat, fix, docs, style, refactor, test, chore
 - **Scopes**: ui, api, security, config, manifest
 - **Clear Messages**: Include impact and reasoning in commit body
+- **Commit Frequency**: Commit after each logical unit of work, never leave uncommitted changes
+- **Change Documentation**: Each commit should represent a complete, testable change
 
 ## 🚨 Critical Lessons Learned
 

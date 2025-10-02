@@ -53,8 +53,9 @@
                     <bt:Image size="32" resid="Icon.32x32"/>
                     <bt:Image size="80" resid="Icon.80x80"/>
                   </Icon>
-                  <Action xsi:type="ExecuteFunction">
-                    <FunctionName>toggleTaskPane</FunctionName>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ButtonId1</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
                   </Action>
                 </Control>
               </Group>
@@ -77,11 +78,11 @@
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Office Debug Tool"/>
         <bt:String id="CommandsGroup.Label" DefaultValue="Debug"/>
-        <bt:String id="TaskpaneButton.Label" DefaultValue="Toggle Debug Info"/>
+        <bt:String id="TaskpaneButton.Label" DefaultValue="Show Debug Info"/>
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="GetStarted.Description" DefaultValue="Display debug and diagnostic information"/>
-        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Toggle debug information panel"/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Click to display debug information"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>

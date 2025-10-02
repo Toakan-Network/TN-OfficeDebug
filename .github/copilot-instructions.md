@@ -334,6 +334,23 @@ Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Office\16.0\Wef" -Recurse -Force 
 # Office still looks for old location until cache is cleared
 ```
 
+### Office.js API Compatibility
+```javascript
+// Use reliable patterns - advanced APIs may not work across all environments
+// ✅ Reliable: ShowTaskpane action in manifest
+<Action xsi:type="ShowTaskpane">
+  <TaskpaneId>ButtonId1</TaskpaneId>
+  <SourceLocation resid="Taskpane.Url"/>
+</Action>
+
+// ❌ Unreliable: ExecuteFunction with Office.addin APIs (requires SharedRuntime)
+// May not work in all Office versions/environments
+Office.addin.hide() // Requires SharedRuntime 1.1
+Office.addin.showAsTaskpane() // Requires SharedRuntime 1.1
+
+// Always test API availability and provide fallbacks
+```
+
 ### Development Testing
 ```javascript
 // Use test-standalone.html for UI testing outside Office

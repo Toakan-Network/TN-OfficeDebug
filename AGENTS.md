@@ -8,7 +8,12 @@ This document provides comprehensive context and instructions for AI agents work
 #### 6. Office Manifest Caching
 **Problem**: 404 errors when manifest file is moved to different directory location
 **Solution**: Clear Office cache - Office applications cache manifest locations from previous sideloading
-**Prevention**: Clear cache after moving manifest files or changing project structureecture decisions, lessons learned, and development patterns established during the initial development phase.
+**Prevention**: Clear cache after moving manifest files or changing project structure
+
+#### 7. Office.js API Compatibility Issues
+**Problem**: Advanced APIs (Office.addin.hide, ExecuteFunction) don't work reliably across all Office environments
+**Solution**: Use basic, guaranteed-to-work patterns like ShowTaskpane action instead of complex toggle logic
+**Prevention**: Test API availability and have fallback to simpler approachesecture decisions, lessons learned, and development patterns established during the initial development phase.
 
 ## 📋 Project Context
 

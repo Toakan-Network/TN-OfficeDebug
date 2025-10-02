@@ -19,6 +19,17 @@
 .DS_Store
 *.pem
 
+# backup files (use git versioning instead)
+*.backup
+*.bak
+*.old
+*.tmp
+
+# IDE temporary files
+*.swp
+*.swo
+*~
+
 # debug
 npm-debug.log*
 yarn-debug.log*

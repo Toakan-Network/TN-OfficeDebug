@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Office Debug Tool - Standalone Test</title>
+    
+    <link rel="stylesheet" href="taskpane.css" />
+    
+    <style>
+        .test-banner {
+            background: #ff9800;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-banner">
+        ⚠️ STANDALONE TEST MODE - Office.js API not available. Only system info will be displayed.
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>Office Debug Information (Test Mode)</h1>
+            <button id="refresh-btn" class="refresh-btn">🔄 Refresh</button>
+        </header>
+
+        <div class="content">
+            <!-- Office Environment Section -->
+            <section class="info-section">
+                <h2>Office Environment</h2>
+                <div id="office-info" class="info-content">
+                    <div class="error">Office.js not available in standalone mode. Load this in Word to see Office environment info.</div>
+                </div>
+            </section>
+
+            <!-- Document Information Section -->
+            <section class="info-section">
+                <h2>Document Information</h2>
+                <div id="document-info" class="info-content">
+                    <div class="error">Office.js not available in standalone mode. Load this in Word to see document info.</div>
+                </div>
+            </section>
+
+            <!-- Add-ins Information Section -->
+            <section class="info-section">
+                <h2>Add-ins Information</h2>
+                <div id="addins-info" class="info-content">
+                    <div class="error">Office.js not available in standalone mode. Load this in Word to see add-in info.</div>
+                </div>
+            </section>
+
+            <!-- System Information Section -->
+            <section class="info-section">
+                <h2>System Information</h2>
+                <div id="system-info" class="info-content">
+                    <div class="loading">Loading...</div>
+                </div>
+            </section>
+
+            <!-- Context Information Section -->
+            <section class="info-section">
+                <h2>Test Environment Details</h2>
+                <div id="context-info" class="info-content">
+                    <div class="loading">Loading...</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        // Standalone test script - no Office.js dependency
+        
+        function createInfoRow(label, value, isCode = false) {
+            const row = document.createElement('div');
+            row.className = 'info-row';
+            
+            const labelDiv = document.createElement('div');
+            labelDiv.className = 'info-label';
+            labelDiv.textContent = label + ':';
+            
+            const valueDiv = document.createElement('div');
+            valueDiv.className = isCode ? 'info-value code' : 'info-value';
+            valueDiv.textContent = value !== null && value !== undefined ? value.toString() : 'N/A';
+            
+            row.appendChild(labelDiv);
+            row.appendChild(valueDiv);
+            
+            return row;
+        }
+        
+        function loadSystemInfo() {
+            const container = document.getElementById('system-info');
+            container.innerHTML = '';
+
+            try {
+                // Browser/User Agent info
+                container.appendChild(createInfoRow('User Agent', navigator.userAgent));
+                container.appendChild(createInfoRow('Platform', navigator.platform));
+                container.appendChild(createInfoRow('Language', navigator.language));
+                container.appendChild(createInfoRow('Online', navigator.onLine ? 'Yes' : 'No'));
+                container.appendChild(createInfoRow('Cookie Enabled', navigator.cookieEnabled ? 'Yes' : 'No'));
+                
+                // Screen info
+                container.appendChild(createInfoRow('Screen Width', screen.width + 'px'));
+                container.appendChild(createInfoRow('Screen Height', screen.height + 'px'));
+                container.appendChild(createInfoRow('Screen Color Depth', screen.colorDepth + ' bit'));
+                container.appendChild(createInfoRow('Screen Pixel Depth', screen.pixelDepth + ' bit'));
+                
+                // Window info
+                container.appendChild(createInfoRow('Window Width', window.innerWidth + 'px'));
+                container.appendChild(createInfoRow('Window Height', window.innerHeight + 'px'));
+                
+                // Performance info (if available)
+                if (window.performance && window.performance.memory) {
+                    const memory = window.performance.memory;
+                    container.appendChild(createInfoRow('JS Heap Size Limit', formatBytes(memory.jsHeapSizeLimit)));
+                    container.appendChild(createInfoRow('Total JS Heap Size', formatBytes(memory.totalJSHeapSize)));
+                    container.appendChild(createInfoRow('Used JS Heap Size', formatBytes(memory.usedJSHeapSize)));
+                } else {
+                    container.appendChild(createInfoRow('Memory Info', 'Not available (Chrome-only feature)'));
+                }
+                
+                // Timing info
+                if (window.performance && window.performance.timing) {
+                    const timing = window.performance.timing;
+                    const loadTime = timing.loadEventEnd - timing.navigationStart;
+                    if (loadTime > 0) {
+                        container.appendChild(createInfoRow('Page Load Time', loadTime + ' ms'));
+                    }
+                }
+                
+                // Current time
+                container.appendChild(createInfoRow('Current Time', new Date().toLocaleString()));
+                container.appendChild(createInfoRow('Timezone Offset', (new Date().getTimezoneOffset() / 60) + ' hours'));
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error loading system info: ${error.message}</div>`;
+            }
+        }
+        
+        function loadContextInfo() {
+            const container = document.getElementById('context-info');
+            container.innerHTML = '';
+
+            try {
+                const testData = {
+                    mode: 'Standalone Test',
+                    officeJsAvailable: typeof Office !== 'undefined',
+                    documentLocation: window.location.href,
+                    documentTitle: document.title
+                };
+                
+                // Create formatted JSON display
+                const jsonDiv = document.createElement('div');
+                jsonDiv.className = 'json-display';
+                jsonDiv.textContent = JSON.stringify(testData, null, 2);
+                
+                const label = document.createElement('div');
+                label.style.marginBottom = '10px';
+                label.style.fontWeight = '600';
+                label.textContent = 'Test Environment Info:';
+                
+                container.appendChild(label);
+                container.appendChild(jsonDiv);
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error loading context info: ${error.message}</div>`;
+            }
+        }
+        
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSystemInfo();
+            loadContextInfo();
+            
+            document.getElementById('refresh-btn').onclick = function() {
+                loadSystemInfo();
+                loadContextInfo();
+            };
+        });
+    </script>
+</body>
+</html>

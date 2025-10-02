@@ -173,6 +173,8 @@ window.logDebug('Context description', {
 
 ### Git Workflow Requirements
 - **Mandatory Commits**: ALWAYS git add and commit after each file change or set of related changes
+- **Change Summary Required**: Always provide a summary of changes before creating commits
+- **User Confirmation**: Get confirmation from user after explaining changes but before executing git commit
 - **Conventional Commits**: feat, fix, docs, style, refactor, test, chore
 - **Scopes**: ui, api, security, config, manifest
 - **Clear Messages**: Include impact and reasoning in commit body

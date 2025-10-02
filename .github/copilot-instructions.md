@@ -1,0 +1,325 @@
+# GitHub Copilot Instructions for TN-OfficeDebug
+
+This file provides GitHub Copilot with specific context and coding patterns for the TN-OfficeDebug project. It ensures consistent, secure, and maintainable code generation that follows established project patterns.
+
+## Project Context
+
+TN-OfficeDebug is a Microsoft Office Add-in diagnostic tool for Word, designed primarily for customer support engineers. It provides comprehensive diagnostic information through a secure, tabbed interface with domain-based access control.
+
+## Critical Office.js API Patterns
+
+### ✅ Safe Office.js Patterns
+```javascript
+// Always load properties explicitly
+const properties = context.document.properties;
+properties.load(['title', 'author', 'subject']);
+await context.sync();
+
+// Use proper error handling
+try {
+  const customProperties = context.document.properties.customProperties;
+  customProperties.load(['items']);
+  await context.sync();
+  // Process properties here
+} catch (error) {
+  window.logDebug('Error loading custom properties', { error: error.message });
+}
+
+// Check API support before use
+if (Office.context.requirements && Office.context.requirements.isSetSupported('WordApi', '1.3')) {
+  // Use advanced API features
+}
+```
+
+### ❌ Avoid These Patterns
+```javascript
+// These properties don't exist in Word API - will cause errors
+context.document.saved
+context.document.isDirty
+Office.context.auth // Not available in Word add-ins
+
+// Don't access properties without loading first
+properties.title // Error: property not loaded
+```
+
+## UI Component Patterns
+
+### Standard Info Row Creation
+```javascript
+// Use the established helper function
+container.appendChild(createInfoRow('Label', 'Value'));
+container.appendChild(createInfoRow('Long Property Name', 'Value', true)); // true for long labels
+
+// For custom properties (use green styling)
+const customRow = createInfoRow(prop.key, prop.value);
+customRow.style.borderLeft = '4px solid #28a745';
+container.appendChild(customRow);
+```
+
+### Section Separators
+```javascript
+// Create visual section separators
+const separator = document.createElement('div');
+separator.style.marginTop = '20px';
+separator.style.marginBottom = '15px';
+separator.style.fontWeight = 'bold';
+separator.style.borderTop = '1px solid #ccc';
+separator.style.paddingTop = '10px';
+separator.textContent = 'Section Title';
+container.appendChild(separator);
+```
+
+## Tab-Specific Guidelines
+
+### Document Info Tab (`loadDocumentInfo`)
+- Focus on document properties, statistics, and custom properties
+- Always handle custom properties with green styling
+- Include security information (document mode, content controls)
+- Avoid complex protection APIs that may not be available
+
+### Office Environment Tab (`loadOfficeInfo`)
+- Essential Office version and license information
+- API capability detection (WordApi versions)
+- Network status for connectivity troubleshooting
+- Keep information scannable for support engineers
+
+### System Info Tab (`loadSystemInfo`)
+- Browser and platform information
+- Security context (HTTPS validation)
+- Performance metrics (memory usage)
+- Critical diagnostics for troubleshooting
+
+### Add-in Info Tab (`loadAddinsInfo`)
+- Developer and project information
+- Clickable links to GitHub repository and issues
+- Troubleshooting information and support resources
+- Load performance and status indicators
+
+## Security Patterns
+
+### Domain-Based Access Control
+```javascript
+// Check user domain for debug tab access
+function checkDebugTabAccess() {
+  // Multiple detection methods with fallbacks
+  // 1. Office.context.user (when available)
+  // 2. Document author extraction
+  // 3. URL-based detection (localhost for dev)
+  // 4. Manual domain prompt
+}
+
+// Hide debug features for unauthorized users
+function hideDebugTab() {
+  const debugTab = document.querySelector('[data-tab="debug"]');
+  const debugContent = document.getElementById('debug');
+  if (debugTab) debugTab.style.display = 'none';
+  if (debugContent) debugContent.style.display = 'none';
+}
+```
+
+### Secure Context Validation
+```javascript
+// Always validate security context
+const isSecure = window.isSecureContext;
+const protocol = window.location.protocol;
+container.appendChild(createInfoRow('Security Context', isSecure ? 'Secure (HTTPS)' : 'Insecure (HTTP)'));
+```
+
+## Error Handling Standards
+
+### Comprehensive Error Boundaries
+```javascript
+// Wrap all Office API operations in try/catch
+try {
+  await Word.run(async (context) => {
+    // Office API operations here
+    const body = context.document.body;
+    body.load(['text']);
+    await context.sync();
+    
+    container.appendChild(createInfoRow('Body Text Length', body.text.length));
+  });
+} catch (error) {
+  window.logDebug('Error in Word.run operation', { 
+    error: error.message,
+    stack: error.stack 
+  });
+  container.innerHTML = `<div class="error">Error loading information: ${error.message}</div>`;
+}
+```
+
+### Graceful Degradation
+```javascript
+// Provide fallback values for unavailable data
+const value = properties.title || 'Not available';
+const diagnosticInfo = Office.context.diagnostics?.version || 'Unknown';
+```
+
+## Logging and Debugging
+
+### Consistent Logging Pattern
+```javascript
+// Use window.logDebug throughout the application
+window.logDebug('Operation context', {
+  operation: 'loadCustomProperties',
+  itemCount: items.length,
+  timestamp: new Date().toISOString()
+});
+
+// Log errors with full context
+window.logDebug('API Error occurred', {
+  error: error.message,
+  api: 'customProperties',
+  context: 'document load'
+});
+```
+
+## File Structure Awareness
+
+### Import/Reference Patterns
+```javascript
+// Files are organized in structured directories
+// /src - Source code (taskpane.html, taskpane.js, taskpane.css, commands.html)
+// /config - Configuration (manifest.xml, web.config)
+// /docs - Documentation
+
+// When referencing files in HTML:
+<link rel="stylesheet" type="text/css" href="taskpane.css" />
+<script type="text/javascript" src="taskpane.js"></script>
+
+// Manifest references include /src path:
+<SourceLocation DefaultValue="https://domain.com/src/taskpane.html"/>
+```
+
+## Performance Considerations
+
+### Efficient API Calls
+```javascript
+// Load multiple properties in single call
+properties.load(['title', 'author', 'subject', 'creationDate', 'lastSaveTime']);
+await context.sync(); // Single sync call
+
+// Avoid repeated DOM queries
+const container = document.getElementById('container-id'); // Query once
+// Use container variable for all subsequent operations
+```
+
+### Memory Management
+```javascript
+// Display memory usage when available
+if (window.performance && window.performance.memory) {
+  const memory = window.performance.memory;
+  const usedMB = Math.round(memory.usedJSHeapSize / 1048576);
+  const limitMB = Math.round(memory.jsHeapSizeLimit / 1048576);
+  container.appendChild(createInfoRow('Memory Usage', `${usedMB}MB / ${limitMB}MB`));
+}
+```
+
+## Accessibility and UX
+
+### Responsive Design Patterns
+```css
+/* Use card-based layout to prevent text overflow */
+.info-row {
+  display: flex;
+  flex-direction: column;
+  margin: 10px 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #007acc;
+}
+
+/* Ensure text wrapping for long content */
+.info-value {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+```
+
+### Professional Appearance
+```javascript
+// Use consistent styling for customer support context
+// Cards should be clean, scannable, and professional
+// Avoid overwhelming users with too much information
+// Group related information logically
+```
+
+## Git and Deployment Patterns
+
+### Commit Message Standards
+```bash
+# Use conventional commits
+feat(ui): add document bookmark detection to diagnostics
+fix(api): resolve custom properties loading error  
+docs: update troubleshooting guide with new error patterns
+refactor(security): improve domain detection reliability
+```
+
+### Configuration Updates
+```javascript
+// When updating manifest or configuration files:
+// 1. Update URLs to match hosting structure (/src paths)
+// 2. Increment version numbers appropriately  
+// 3. Test in both development and production environments
+// 4. Validate manifest with Office validation tools
+```
+
+## Testing Patterns
+
+### Cross-Environment Testing
+```javascript
+// Always test in multiple environments:
+// - Word Desktop (Windows/Mac)
+// - Word Online
+// - Different browser contexts
+// - With and without network connectivity
+// - Various document types and protection levels
+
+// Test error scenarios:
+// - Missing custom properties
+// - Restricted document access
+// - Network connectivity issues
+// - Unsupported Office versions
+```
+
+### Development Testing
+```javascript
+// Use test-standalone.html for UI testing outside Office
+// Test domain restrictions with different user contexts
+// Validate security features work as expected
+// Ensure graceful degradation for missing APIs
+```
+
+## Code Style and Conventions
+
+### Variable Naming
+```javascript
+// Use descriptive names for customer support context
+const customPropertiesContainer = document.getElementById('custom-properties');
+const officeVersionInfo = Office.context.diagnostics?.version;
+const documentSecurityStatus = 'protected';
+
+// Use camelCase for JavaScript
+const loadDocumentProperties = () => { /* */ };
+const createDiagnosticRow = (label, value) => { /* */ };
+```
+
+### Function Organization
+```javascript
+// Keep tab functions focused and maintainable
+function loadDocumentInfo() {
+  // Document-specific diagnostics only
+}
+
+function loadOfficeInfo() {
+  // Office environment diagnostics only  
+}
+
+// Use helper functions for reusable patterns
+function createInfoRow(label, value, longLabel = false) {
+  // Consistent UI component creation
+}
+```
+
+Remember: This project serves customer support engineers who need quick, reliable diagnostic information. Every code suggestion should prioritize clarity, reliability, and the support workflow over developer convenience.

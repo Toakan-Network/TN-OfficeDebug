@@ -408,6 +408,8 @@ npx http-server . -p 8080 --cors
 ### Getting Help
 - **Issues**: [GitHub Issues](https://github.com/Toakan-Network/TN-OfficeDebug/issues)
 - **Documentation**: This file and README.md
+- **AI Development**: AGENTS.md for AI agent context and patterns
+- **Copilot Guidelines**: .github/copilot-instructions.md for GitHub Copilot
 - **Discussions**: GitHub Discussions for questions and ideas
 
 ### Contributing

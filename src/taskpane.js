@@ -456,7 +456,10 @@ function loadAddinsInfo() {
     container.appendChild(createInfoRow('Project Name', 'TN-OfficeDebug'));
     container.appendChild(createInfoRow('Description', 'Office.js Debug and Diagnostic Tool'));
     
-    container.appendChild(createInfoRow('Version', Office.context.manifest?.version || 'x.x.x'));
+    // Version from manifest - Office.js doesn't provide runtime access to manifest version
+    // Source: Microsoft documentation shows no Office.context.manifest API exists
+    const ADDIN_VERSION = '1.0.13'; // Keep in sync with config/manifest.xml
+    container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     
     // Repository Information

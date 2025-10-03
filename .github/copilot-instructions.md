@@ -249,11 +249,14 @@ if (window.performance && window.performance.memory) {
 
 ### Commit Message Standards
 ```bash
-# Use conventional commits
-feat(ui): add document bookmark detection to diagnostics
+# Use conventional commits - keep messages concise and professional
+feat(ui): add document bookmark detection
 fix(api): resolve custom properties loading error  
-docs: update troubleshooting guide with new error patterns
-refactor(security): improve domain detection reliability
+docs: update troubleshooting guide
+refactor(security): improve domain detection
+
+# Avoid verbose descriptions and unnecessary details
+# Focus on what changed, not why (unless critical context)
 ```
 
 ### Mandatory Git Workflow

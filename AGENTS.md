@@ -190,7 +190,8 @@ window.logDebug('Context description', {
 - **User Confirmation**: Get confirmation from user after explaining changes but before executing git commit
 - **Conventional Commits**: feat, fix, docs, style, refactor, test, chore
 - **Scopes**: ui, api, security, config, manifest
-- **Clear Messages**: Include impact and reasoning in commit body
+- **Concise Messages**: Keep commit messages professional and succinct, avoid unnecessary details
+- **Clear Messages**: Include impact and reasoning in commit body only when essential
 - **Commit Frequency**: Commit after each logical unit of work, never leave uncommitted changes
 - **Change Documentation**: Each commit should represent a complete, testable change
 

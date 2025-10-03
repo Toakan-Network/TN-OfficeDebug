@@ -41,33 +41,37 @@ See `PROJECT_STRUCTURE.md` for detailed information.
 
 1. Open Word Online (https://office.com/launch/word)
 2. Create a new document
-3. Go to **Insert** > **Add-ins** > **Upload My Add-in**
-4. Click **Browse** and select the `config/manifest.xml` file
-5. The add-in will appear in the ribbon as "Toggle Debug Info"
+3. Go to **Home** > **Add-ins** > **More Settings** (or **Advanced**)
+4. On the Office Add-ins dialog, select **Upload My Add-in**
+5. Browse to the `config/manifest.xml` file and select **Upload**
+6. The add-in will appear in the ribbon as "Show Debug Info"
 
-### Option 2: Sideload in Office Desktop
+### Option 2: Sideload in Office Desktop (Windows)
 
-#### Windows:
-1. Save all files to a local web server or use Office's debugging tools
-2. Update the manifest.xml to point to your local server URL
-3. Follow Microsoft's documentation for sideloading: https://learn.microsoft.com/en-us/office/dev/add-ins/testing/sideload-office-add-ins-for-testing
+1. Place the `config/manifest.xml` file in a shared network folder
+2. Open Word Desktop application
+3. Go to **File** > **Options** > **Trust Center** > **Trust Center Settings**
+4. Select **Trusted Add-in Catalogs**
+5. In the **Catalog Url** box, enter the full network path to your shared folder
+6. Select **Add catalog** and check **Show in Menu**
+7. Click **OK** to close dialogs and restart Word
+8. Go to **Home** > **Add-ins** > **Advanced**
+9. Choose **SHARED FOLDER** at the top of the Office Add-ins dialog
+10. Select your add-in and choose **Add**
+
+*Note: Requires HTTPS web server for manifest URLs and proper network share setup*
 
 #### Mac:
 1. Follow the same steps as Windows, but use the Mac-specific sideload process
 2. See: https://learn.microsoft.com/en-us/office/dev/add-ins/testing/sideload-an-office-add-in-on-mac
 
-### Option 3: Using Office Add-in Debugging Tools (Development)
+### Option 3: Development Sideloading
 
-```bash
-# Install dependencies
-npm install
-
-# Start the debugging server (requires local development server)
-npm start
-
-# Validate the manifest
-npm run validate
-```
+For development and testing:
+1. Ensure the add-in files are served from a web server (IIS recommended)
+2. Update manifest URLs to point to your development server
+3. Use Office Online sideloading for quickest testing
+4. Clear Office cache when making manifest changes
 
 ## Usage
 

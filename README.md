@@ -1,4 +1,6 @@
-# TN-OfficeDeb## Features
+# TN-OfficeDebug
+
+## Features
 
 ✨ **Tabbed Interface**: Organized diagnostic information across Document Info, Office Environment, System Info, and Add-in Info tabs
 

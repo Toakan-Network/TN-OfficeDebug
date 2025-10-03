@@ -1,13 +1,17 @@
 /* global Office */
 
-// Enhanced Office.onReady
 Office.onReady((info) => {
   try {
-    if (info.host === Office.HostType.Word) {
+    // Support Word, Excel, and PowerPoint
+    if (info.host === Office.HostType.Word || info.host === Office.HostType.Excel || info.host === Office.HostType.PowerPoint) {
       const refreshBtn = document.getElementById('refresh-btn');
       if (refreshBtn) {
         refreshBtn.onclick = loadAllDebugInfo;
       }
+      loadAllDebugInfo();
+    } else {
+      console.log('Unsupported Office host:', info.host);
+      // Still load basic info for unsupported hosts
       loadAllDebugInfo();
     }
   } catch (error) {
@@ -194,8 +198,28 @@ function loadDocumentInfo() {
   container.innerHTML = '';
 
   try {
-    
-    Word.run(async (context) => {
+    // Check which Office host we're in
+    if (Office.context.host === Office.HostType.Word) {
+      // Word-specific document info
+      loadWordDocumentInfo(container);
+    } else if (Office.context.host === Office.HostType.Excel) {
+      // Excel-specific document info
+      loadExcelDocumentInfo(container);
+    } else if (Office.context.host === Office.HostType.PowerPoint) {
+      // PowerPoint-specific document info
+      loadPowerPointDocumentInfo(container);
+    } else {
+      // Generic document info for other hosts
+      loadGenericDocumentInfo(container);
+    }
+  } catch (error) {
+    console.error('ERROR in loadDocumentInfo', error);
+    container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+  }
+}
+
+function loadWordDocumentInfo(container) {
+  Word.run(async (context) => {
       try {
         const doc = context.document;
         const properties = doc.properties;
@@ -370,12 +394,44 @@ function loadDocumentInfo() {
     }).catch((error) => {
       container.innerHTML = `<div class="error">Word.run Error: ${error.message}</div>`;
     });
-    
-  } catch (error) {
-    console.error('ERROR in loadDocumentInfo', error);
-    container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+}
+
+function loadExcelDocumentInfo(container) {
+  // Excel-specific document information
+  container.appendChild(createInfoRow('Host Application', 'Microsoft Excel'));
+  
+  // Generic document info that works across hosts
+  if (Office.context.document && Office.context.document.url) {
+    container.appendChild(createInfoRow('Document URL', Office.context.document.url));
   }
-}function loadAddinsInfo() {
+  
+  // Add Excel-specific info here when needed
+  container.appendChild(createInfoRow('Document Type', 'Excel Workbook'));
+}
+
+function loadPowerPointDocumentInfo(container) {
+  // PowerPoint-specific document information
+  container.appendChild(createInfoRow('Host Application', 'Microsoft PowerPoint'));
+  
+  // Generic document info that works across hosts
+  if (Office.context.document && Office.context.document.url) {
+    container.appendChild(createInfoRow('Document URL', Office.context.document.url));
+  }
+  
+  // Add PowerPoint-specific info here when needed
+  container.appendChild(createInfoRow('Document Type', 'PowerPoint Presentation'));
+}
+
+function loadGenericDocumentInfo(container) {
+  // Generic document information for unknown hosts
+  container.appendChild(createInfoRow('Host Application', Office.context.host || 'Unknown'));
+  
+  if (Office.context.document && Office.context.document.url) {
+    container.appendChild(createInfoRow('Document URL', Office.context.document.url));
+  }
+}
+
+function loadAddinsInfo() {
   const container = document.getElementById('addins-info');
   
   if (!container) {

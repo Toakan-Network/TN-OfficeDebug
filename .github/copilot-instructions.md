@@ -278,11 +278,12 @@ git commit -m "type(scope): description"
 # When new context or patterns emerge during development:
 # 1. Update AGENTS.md and/or copilot-instructions.md with new learnings
 # 2. Document additional context, patterns, or requirements
-# 3. Commit instruction updates immediately
-# 4. Ensure future AI sessions benefit from current session learnings
+# 3. Update README.md when functionality changes
+# 4. Commit instruction updates immediately
+# 5. Ensure future AI sessions benefit from current session learnings
 
 # Example:
-git add AGENTS.md .github/copilot-instructions.md
+git add AGENTS.md .github/copilot-instructions.md README.md
 git commit -m "docs: capture new development pattern from session context"
 ```
 

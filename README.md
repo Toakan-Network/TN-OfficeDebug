@@ -4,23 +4,27 @@ A tool to display various hidden settings / debug information in an Office.js wi
 
 ## Overview
 
-This Office Add-in provides IT professionals and developers with comprehensive diagnostic and debug information about the Office environment, including:
+This Office Add-in provides customer support engineers and IT professionals with comprehensive diagnostic information for Microsoft Word troubleshooting:
 
-- **Office Environment**: Host type, platform, version, language settings, and theme information
-- **Document Information**: Document properties, metadata, author information, timestamps, and statistics
-- **Add-in Information**: Current add-in details and settings (Note: Office Add-ins cannot enumerate other installed add-ins due to security restrictions)
-- **System Information**: Browser details, memory usage (Chrome only), screen resolution, and performance metrics
-- **Office Context**: Complete Office.js context object with all available API information
+- **Document Information**: Properties, custom properties, metadata, statistics, and security settings
+- **Office Environment**: Version, platform, API support, license, and network status
+- **System Information**: Browser details, security context, memory usage, and performance metrics
+- **Add-in Information**: Project details, repository links, and troubleshooting resources
+- **Debug Console**: Real-time logging for advanced diagnostics (restricted access)
 
 ## Features
 
-✨ **Real-time Information Display**: All information is gathered and displayed in real-time when the add-in is opened
+✨ **Tabbed Interface**: Organized diagnostic information across Document Info, Office Environment, System Info, and Add-in Info tabs
 
-🔄 **Refresh Capability**: Click the refresh button to reload all diagnostic information
+� **Custom Properties Management**: Full CRUD support for Word document custom properties with green highlighting
 
-🎨 **Modern UI**: Clean, professional interface with color-coded sections for easy reading
+🔒 **Domain-Based Security**: Debug tab restricted to @bighand.services domain users with multiple detection methods
 
-📊 **Comprehensive Data**: Displays all available diagnostic information accessible through Office.js APIs
+🎨 **Card-Based Layout**: Professional UI with consistent styling to prevent text overflow and improve readability
+
+🔄 **Real-Time Diagnostics**: Live information gathering optimized for customer support workflows
+
+🛠️ **Comprehensive Error Handling**: Graceful degradation when Office.js APIs are unavailable
 
 ## Project Structure
 
@@ -39,7 +43,7 @@ See `PROJECT_STRUCTURE.md` for detailed information.
 2. Create a new document
 3. Go to **Insert** > **Add-ins** > **Upload My Add-in**
 4. Click **Browse** and select the `config/manifest.xml` file
-5. The add-in will appear in the ribbon
+5. The add-in will appear in the ribbon as "Toggle Debug Info"
 
 ### Option 2: Sideload in Office Desktop
 
@@ -68,59 +72,69 @@ npm run validate
 ## Usage
 
 1. Open Microsoft Word (Online or Desktop)
-2. Open the Office Debug Tool from the **Home** tab or Add-ins menu
-3. The task pane will open showing all available debug information
-4. Click the **🔄 Refresh** button to reload information at any time
+2. Click **Show Debug Info** button from the **Home** tab ribbon
+3. The task pane opens with tabbed diagnostic information:
+   - **Document Info**: Properties, custom properties, security settings
+   - **Office Environment**: Version, platform, API support, license
+   - **System Info**: Browser, security context, performance metrics
+   - **Add-in Info**: Project details and troubleshooting resources
+   - **Debug**: Advanced logging (restricted to @bighand.services users)
 
-## Debug Information Sections
+## Debug Information Tabs
+
+### Document Info
+- Document properties (title, author, dates, statistics)
+- **Custom Properties**: Full CRUD management with green highlighting
+- Security information (document mode, protection status)
+- URL and basic document metadata
 
 ### Office Environment
-- Host application name (Word)
-- Platform (Windows, Mac, iOS, Web, etc.)
-- Display and content languages
-- Office version and diagnostics
-- Touch capability status
-- Current Office theme colors
+- Office version, license, and API capability detection
+- Platform information (Windows, Mac, Web)
+- Network connectivity status
+- Essential diagnostics for customer support
 
-### Document Information
-- Document URL and mode
-- Title, subject, author, keywords
-- Creation date, last save time, last print date
-- Revision number and application name
-- Character and paragraph counts
+### System Info
+- Browser and platform details
+- Security context (HTTPS validation, storage availability)
+- Performance metrics (memory usage, screen resolution)
+- Critical system diagnostics
 
-### Add-ins Information
-- Current add-in settings availability
-- Roaming settings count
-- License information
-- Manifest ID and version
+### Add-in Info
+- Project information with clickable GitHub repository links
+- Support resources and troubleshooting guides
+- Add-in performance and load status
+- Developer contact information
 
-### System Information
-- Browser user agent and platform
-- Online/offline status
-- Screen dimensions and color depth
-- Window dimensions
-- JavaScript heap memory usage (Chrome only)
-- Page load timing
-- Current time and timezone
-
-### Office Context Details
-- Complete Office.js context object in JSON format
-- All available API information
-- Office.js library status
+### Debug (Restricted Access)
+- Real-time debug logging with window.logDebug() function
+- Advanced diagnostics for technical troubleshooting
+- Access restricted to @bighand.services domain users
+- Multiple user detection methods with graceful fallbacks
 
 ## File Structure
 
 ```
 TN-OfficeDebug/
-├── manifest.xml       # Office Add-in manifest
-├── taskpane.html      # Main UI HTML
-├── taskpane.css       # Styling
-├── taskpane.js        # Main logic and data gathering
-├── commands.html      # Ribbon commands (minimal)
-├── package.json       # NPM package configuration
-├── LICENSE            # MIT License
-└── README.md          # This file
+├── src/
+│   ├── taskpane.html      # Main UI with tabbed interface
+│   ├── taskpane.css       # Card-based styling and layout
+│   ├── taskpane.js        # Core logic and Office.js integration
+│   ├── commands.html      # Ribbon command handlers
+│   └── test-standalone.html # UI testing outside Office
+├── config/
+│   ├── manifest.xml       # Office Add-in manifest
+│   └── web.config         # IIS web server configuration
+├── assets/
+│   └── gears.ico          # Custom add-in icon
+├── docs/
+│   ├── instructions.md    # Complete setup guide
+│   └── USAGE.md          # Quick usage reference
+├── .github/
+│   └── copilot-instructions.md # AI coding guidelines
+├── AGENTS.md             # AI agent context and patterns
+├── PROJECT_STRUCTURE.md  # Detailed project organization
+└── LICENSE               # MIT License
 ```
 
 ## Development

@@ -8,12 +8,9 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
 # production
 /build
+/dist
 
 # misc
 .DS_Store
@@ -39,9 +36,16 @@ yarn-error.log*
 .env*.local
 .env
 
-# vercel
-.vercel
+# Office add-in specific
+*.user
+**/bin/**
+**/obj/**
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Visual Studio temporary files
+.vs/
+*.suo
+*.vcxproj.user
+
+# Office cache and temporary files
+OfficeAddinLocalCache/
+AppData/

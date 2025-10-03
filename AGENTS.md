@@ -200,6 +200,7 @@ window.logDebug('Context description', {
 - **Pattern Recognition**: Document new patterns, best practices, or requirements that emerge during development
 - **Instruction Refinement**: Keep agent instructions current with evolving project needs and discovered workflows
 - **Knowledge Preservation**: Ensure future AI assistance benefits from lessons learned in previous sessions
+- **README Maintenance**: Update README.md when functionality changes, new features are added, or project structure is modified
 
 ### Verification and Problem-Solving Standards
 - **No Assumptions**: Do not assume or guess - only use verified sources for information

@@ -1,232 +1,32 @@
 /* global Office */
 
-// Function to check if user has access to debug tab based on domain
-function checkDebugTabAccess() {
-  try {
-    window.logDebug('Checking debug tab access');
-    
-    // For Word add-ins, we'll use a different approach
-    // Try to get user info from the current environment
-    let userEmail = null;
-    
-    // Method 1: Check if we're in Office Online and can access user info through URL or context
-    if (Office.context && Office.context.host && Office.context.host.toString() === 'Word') {
-      window.logDebug('Detected Word host, checking available user sources');
-      
-      // Method 2: Try Office.context.user (available in some Office versions)
-      if (Office.context.user && Office.context.user.email) {
-        userEmail = Office.context.user.email;
-        window.logDebug('Found user email from Office.context.user', { email: userEmail });
-      }
-      
-      // Method 3: Try document properties for user info (if available)
-      else if (Office.context.document) {
-        // Some versions expose user info through document context
-        Word.run(async (context) => {
-          try {
-            const properties = context.document.properties;
-            properties.load(['author', 'lastAuthor']);
-            await context.sync();
-            
-            window.logDebug('Document properties loaded', { 
-              author: properties.author, 
-              lastAuthor: properties.lastAuthor 
-            });
-            
-            // Check if author contains an email-like pattern
-            const authorInfo = properties.author || properties.lastAuthor || '';
-            const emailMatch = authorInfo.match(/[\w.-]+@[\w.-]+\.\w+/);
-            if (emailMatch) {
-              userEmail = emailMatch[0];
-              window.logDebug('Found email from document author', { email: userEmail });
-              hideDebugTabIfNotAuthorized(userEmail);
-              return;
-            }
-          } catch (docError) {
-            window.logDebug('Could not get user info from document properties', { error: docError.message });
-          }
-          
-          // If we get here, no user info was found
-          checkAlternativeAccessMethods();
-        }).catch(error => {
-          window.logDebug('Word.run failed for user info', { error: error.message });
-          checkAlternativeAccessMethods();
-        });
-        return; // Exit early since Word.run is async
-      }
-      
-      // Method 4: Check URL parameters or other context clues
-      else {
-        checkAlternativeAccessMethods();
-        return;
-      }
-    }
-    
-    // If we found user email through synchronous methods
-    if (userEmail) {
-      hideDebugTabIfNotAuthorized(userEmail);
-    } else {
-      window.logDebug('No user email found through standard methods');
-      checkAlternativeAccessMethods();
-    }
-    
-  } catch (error) {
-    window.logDebug('Error checking debug tab access', { error: error.message });
-    checkAlternativeAccessMethods();
-  }
-}
-
-function checkAlternativeAccessMethods() {
-  try {
-    window.logDebug('Checking alternative access methods');
-    
-    // Method: Check current URL for domain indicators
-    const currentUrl = window.location.href;
-    window.logDebug('Current URL', { url: currentUrl });
-    
-    // If the add-in is hosted on bighand.services domain, allow access
-    if (currentUrl.includes('bighand.services')) {
-      window.logDebug('Add-in hosted on bighand.services domain, allowing debug access');
-      return; // Don't hide debug tab
-    }
-    
-    // Method: Check for local development
-    if (currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
-      window.logDebug('Local development detected, allowing debug access');
-      return; // Don't hide debug tab for development
-    }
-    
-    // Method: Create a simple domain check dialog
-    promptForDomainAccess();
-    
-  } catch (error) {
-    window.logDebug('Error in alternative access methods', { error: error.message });
-    hideDebugTabByDefault();
-  }
-}
-
-function promptForDomainAccess() {
-  try {
-    // Create a simple check by asking user to confirm their domain
-    const userInput = prompt('For security purposes, please enter your email domain (e.g., bighand.services):');
-    
-    if (userInput === 'bighand.services') {
-      window.logDebug('User provided correct domain access code');
-      // Allow access - don't hide debug tab
-    } else {
-      window.logDebug('User provided incorrect or no domain access', { input: userInput });
-      hideDebugTab();
-    }
-  } catch (error) {
-    window.logDebug('Error in domain prompt', { error: error.message });
-    hideDebugTabByDefault();
-  }
-}
-
-function hideDebugTabIfNotAuthorized(userEmail) {
-  const allowedDomain = 'bighand.services';
-  
-  if (!userEmail) {
-    window.logDebug('No user email found, hiding debug tab');
-    hideDebugTabByDefault();
-    return;
-  }
-  
-  const emailDomain = userEmail.split('@')[1];
-  window.logDebug('Checking user domain access', { 
-    userEmail: userEmail, 
-    userDomain: emailDomain, 
-    allowedDomain: allowedDomain 
-  });
-  
-  if (emailDomain !== allowedDomain) {
-    window.logDebug('User domain not authorized, hiding debug tab', { 
-      userDomain: emailDomain, 
-      allowedDomain: allowedDomain 
-    });
-    hideDebugTab();
-  } else {
-    window.logDebug('User domain authorized, debug tab will remain visible', { 
-      userDomain: emailDomain 
-    });
-  }
-}
-
-function hideDebugTabByDefault() {
-  window.logDebug('Hiding debug tab due to no user info or error');
-  hideDebugTab();
-}
-
-function hideDebugTab() {
-  try {
-    const debugTab = document.querySelector('[data-tab="debug"]');
-    const debugContent = document.getElementById('debug');
-    
-    if (debugTab) {
-      debugTab.style.display = 'none';
-      window.logDebug('Debug tab hidden');
-    }
-    
-    if (debugContent) {
-      debugContent.style.display = 'none';
-      window.logDebug('Debug content hidden');
-    }
-    
-    // If debug was the active tab, switch to document-info
-    const activeTab = document.querySelector('.tab-button.active');
-    if (activeTab && activeTab.getAttribute('data-tab') === 'debug') {
-      window.logDebug('Debug was active tab, switching to document-info');
-      // Find and activate document-info tab
-      const docTab = document.querySelector('[data-tab="document-info"]');
-      if (docTab) {
-        docTab.click();
-      }
-    }
-  } catch (error) {
-    window.logDebug('Error hiding debug tab', { error: error.message });
-  }
-}
-
-// Enhanced Office.onReady with debugging
+// Enhanced Office.onReady
 Office.onReady((info) => {
   try {
-    window.logDebug('Office.onReady called', { host: info?.host, platform: info?.platform });
-    
-    // Check debug tab access based on user domain
-    checkDebugTabAccess();
-    
     if (info.host === Office.HostType.Word) {
-      window.logDebug('Detected Word host');
       const refreshBtn = document.getElementById('refresh-btn');
       if (refreshBtn) {
         refreshBtn.onclick = loadAllDebugInfo;
-        window.logDebug('Refresh button click handler attached');
-      } else {
-        window.logDebug('ERROR: refresh-btn element not found');
       }
       loadAllDebugInfo();
-    } else {
-      window.logDebug('Host is not Word', { actualHost: info.host });
     }
   } catch (error) {
-    window.logDebug('ERROR in Office.onReady', { error: error.message, stack: error.stack });
+    console.error('ERROR in Office.onReady', error);
   }
 }).catch(error => {
-  window.logDebug('ERROR: Office.onReady failed', { error: error.message, stack: error.stack });
+  console.error('ERROR: Office.onReady failed', error);
 });
 
 function loadAllDebugInfo() {
   try {
-    window.logDebug('Starting loadAllDebugInfo');
     loadOfficeInfo();
     loadDocumentInfo();
     loadAddinsInfo();
     loadSystemInfo();
     // Skip loadContextInfo since there's no context-info element in HTML
     // loadContextInfo();
-    window.logDebug('Completed loadAllDebugInfo');
   } catch (error) {
-    window.logDebug('ERROR in loadAllDebugInfo', { error: error.message, stack: error.stack });
+    console.error('ERROR in loadAllDebugInfo', error);
   }
 }
 
@@ -273,12 +73,11 @@ function loadOfficeInfo() {
   const container = document.getElementById('office-info');
   
   if (!container) {
-    window.logDebug('ERROR: office-info container not found');
+    console.error('ERROR: office-info container not found');
     return;
   }
   
   try {
-    window.logDebug('Loading Office info');
     container.innerHTML = '';
 
         // Office.context information
@@ -388,14 +187,13 @@ function loadDocumentInfo() {
   const container = document.getElementById('document-info');
   
   if (!container) {
-    window.logDebug('ERROR: document-info container not found');
+    console.error('ERROR: document-info container not found');
     return;
   }
   
   container.innerHTML = '';
 
   try {
-    window.logDebug('Loading Document info');
     
     Word.run(async (context) => {
       try {
@@ -408,15 +206,10 @@ function loadDocumentInfo() {
         body.load('text,type');
         
         // Load custom properties
-        window.logDebug('Loading custom properties...');
         const customProperties = doc.properties.customProperties;
         customProperties.load('items');
         
         await context.sync();
-        
-        window.logDebug('Document properties loaded successfully');
-        window.logDebug('Custom properties count', { count: customProperties.items ? customProperties.items.length : 'undefined' });
-        window.logDebug('Custom properties object', { customProperties: customProperties });
         
         // Document URL
         if (Office.context.document && Office.context.document.url) {
@@ -510,21 +303,14 @@ function loadDocumentInfo() {
           }
         } catch (protError) {
           container.appendChild(createInfoRow('Protection Status', 'Could not determine'));
-          window.logDebug('Could not get document protection info', { error: protError.message });
+          // Could not get document protection info
         }
         
 
         
-        window.logDebug('About to process custom properties section');
-        
         // Custom Properties Section
-        window.logDebug('Processing custom properties', { 
-          hasItems: customProperties.items !== undefined,
-          itemsLength: customProperties.items ? customProperties.items.length : 'no items array'
-        });
         
         if (customProperties.items && customProperties.items.length > 0) {
-          window.logDebug('Found custom properties', { count: customProperties.items.length });
           
           // Add a separator
           const separator = document.createElement('div');
@@ -541,9 +327,6 @@ function loadDocumentInfo() {
             const propName = customProp.key || `Property ${index + 1}`;
             const propValue = customProp.value !== null && customProp.value !== undefined ? customProp.value.toString() : 'N/A';
             const propType = customProp.type || 'Unknown';
-            
-            window.logDebug('Custom property', { name: propName, value: propValue, type: propType });
-            
             // Create custom property row with type information
             const propRow = createInfoRow(propName, propValue);
             
@@ -567,7 +350,6 @@ function loadDocumentInfo() {
           
           container.appendChild(createInfoRow('Total Custom Properties', customProperties.items.length));
         } else {
-          window.logDebug('No custom properties found or items array is empty');
           
           // Add a separator for "no custom properties"
           const separator = document.createElement('div');
@@ -583,23 +365,21 @@ function loadDocumentInfo() {
         }
         
       } catch (error) {
-        window.logDebug('Error in Word.run for document info', { error: error.message });
         container.innerHTML = `<div class="error">Error loading document info: ${error.message}</div>`;
       }
     }).catch((error) => {
-      window.logDebug('Word.run failed for document info', { error: error.message });
       container.innerHTML = `<div class="error">Word.run Error: ${error.message}</div>`;
     });
     
   } catch (error) {
-    window.logDebug('ERROR in loadDocumentInfo', { error: error.message });
+    console.error('ERROR in loadDocumentInfo', error);
     container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
   }
 }function loadAddinsInfo() {
   const container = document.getElementById('addins-info');
   
   if (!container) {
-    window.logDebug('ERROR: addins-info container not found');
+    console.error('ERROR: addins-info container not found');
     return;
   }
   
@@ -748,7 +528,6 @@ function loadDocumentInfo() {
     
     // Console availability
     container.appendChild(createInfoRow('Console Available', typeof console !== 'undefined' ? 'Yes' : 'No'));
-    container.appendChild(createInfoRow('Debug Mode', window.logDebug ? 'Enabled' : 'Disabled'));
     
     // Common troubleshooting checks
     container.appendChild(createInfoRow('Mixed Content Issues', window.location.protocol === 'https:' ? 'None detected' : 'Possible (HTTP on HTTPS)'));
@@ -805,7 +584,7 @@ function loadSystemInfo() {
   const container = document.getElementById('system-info');
   
   if (!container) {
-    window.logDebug('ERROR: system-info container not found');
+    console.error('ERROR: system-info container not found');
     return;
   }
   

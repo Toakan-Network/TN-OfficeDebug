@@ -5,39 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Office Debug Tool</title>
-    
-    <!-- Debug Console -->
-    <script>
-        // Enhanced error handling and logging
-        window.debugLog = [];
-        window.logDebug = function(message, data) {
-            const timestamp = new Date().toISOString();
-            const logEntry = { timestamp, message, data };
-            window.debugLog.push(logEntry);
-            console.log(`[DEBUG ${timestamp}] ${message}`, data || '');
-            
-            // Show in UI if debug container exists
-            const debugContainer = document.getElementById('debug-output');
-            if (debugContainer) {
-                const logDiv = document.createElement('div');
-                logDiv.innerHTML = `<strong>${timestamp}</strong>: ${message} ${data ? JSON.stringify(data) : ''}`;
-                debugContainer.appendChild(logDiv);
-                debugContainer.scrollTop = debugContainer.scrollHeight;
-            }
-        };
-        
-        // Capture all errors
-        window.onerror = function(msg, url, line, col, error) {
-            window.logDebug('JavaScript Error', { message: msg, url, line, col, error: error?.toString() });
-            return false;
-        };
-        
-        window.addEventListener('unhandledrejection', function(event) {
-            window.logDebug('Unhandled Promise Rejection', { reason: event.reason });
-        });
-        
-        window.logDebug('Starting Office Debug Tool');
-    </script>
+
     
     <!-- Office JavaScript API -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
@@ -93,17 +61,6 @@
                         </div>
                     </section>
                 </div>
-
-                <!-- Debug Output Tab Content -->
-                <div id="tab-debug" class="tab-content">
-                    <section class="info-section">
-                        <h2>Debug Output</h2>
-                        <div id="debug-output" class="info-content debug-output" style="max-height: 300px; overflow-y: auto; background: #f5f5f5; padding: 6px; font-family: monospace; font-size: 10px;">
-                            <div>Debug console initialized...</div>
-                        </div>
-                        <button onclick="clearDebugLog()" style="margin-top: 5px; padding: 4px 8px; font-size: 11px;">Clear Debug Log</button>
-                    </section>
-                </div>
             </div>
 
             <!-- Tab Navigation -->
@@ -123,10 +80,6 @@
                 <button class="tab-button" data-tab="tab-addins">
                     <span class="tab-icon">🧩</span>
                     <span class="tab-label">Add-in Info</span>
-                </button>
-                <button class="tab-button" data-tab="tab-debug">
-                    <span class="tab-icon">🐛</span>
-                    <span class="tab-label">Debug Output</span>
                 </button>
             </div>
         </div>

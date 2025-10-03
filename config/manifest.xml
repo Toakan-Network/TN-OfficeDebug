@@ -10,8 +10,8 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Office Debug Tool"/>
   <Description DefaultValue="Display debug and diagnostic information about Office applications"/>
-  <IconUrl DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/word-hello-world/assets/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/word-hello-world/assets/icon-64.png"/>
+  <IconUrl DefaultValue="https://tools.bighand.services/office-debug/assets/gears.ico"/>
+  <HighResolutionIconUrl DefaultValue="https://tools.bighand.services/office-debug/assets/gears.ico"/>
   <SupportUrl DefaultValue="https://github.com/Toakan-Network/TN-OfficeDebug"/>
   <AppDomains>
     <AppDomain>https://officedev.github.io</AppDomain>
@@ -66,9 +66,9 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/word-hello-world/assets/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/word-hello-world/assets/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://officedev.github.io/Office-Add-in-samples/Samples/hello-world/word-hello-world/assets/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://tools.bighand.services/office-debug/assets/gears.ico"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://tools.bighand.services/office-debug/assets/gears.ico"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://tools.bighand.services/office-debug/assets/gears.ico"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://github.com/Toakan-Network/TN-OfficeDebug"/>

@@ -1,6 +1,14 @@
-# TN-OfficeDebug
+# TN-OfficeDeb## Features
 
-A tool to display various hidden settings / debug information in an Office.js window for Microsoft Word.
+✨ **Tabbed Interface**: Organized diagnostic information across Document Info, Office Environment, System Info, and Add-in Info tabs
+
+📝 **Custom Properties Management**: Full CRUD support for Word document custom properties with green highlighting
+
+🎨 **Card-Based Layout**: Professional UI with consistent styling to prevent text overflow and improve readability
+
+🔄 **Real-Time Diagnostics**: Live information gathering optimized for customer support workflows
+
+🛠️ **Comprehensive Error Handling**: Graceful degradation when Office.js APIs are unavailable display various hidden settings / debug information in an Office.js window for Microsoft Word.
 
 ## Overview
 
@@ -10,7 +18,6 @@ This Office Add-in provides customer support engineers and IT professionals with
 - **Office Environment**: Version, platform, API support, license, and network status
 - **System Information**: Browser details, security context, memory usage, and performance metrics
 - **Add-in Information**: Project details, repository links, and troubleshooting resources
-- **Debug Console**: Real-time logging for advanced diagnostics (restricted access)
 
 ## Features
 
@@ -82,7 +89,6 @@ For development and testing:
    - **Office Environment**: Version, platform, API support, license
    - **System Info**: Browser, security context, performance metrics
    - **Add-in Info**: Project details and troubleshooting resources
-   - **Debug**: Advanced logging (restricted to @bighand.services users)
 
 ## Debug Information Tabs
 
@@ -109,37 +115,6 @@ For development and testing:
 - Support resources and troubleshooting guides
 - Add-in performance and load status
 - Developer contact information
-
-### Debug (Restricted Access)
-- Real-time debug logging with window.logDebug() function
-- Advanced diagnostics for technical troubleshooting
-- Access restricted to @bighand.services domain users
-- Multiple user detection methods with graceful fallbacks
-
-## File Structure
-
-```
-TN-OfficeDebug/
-├── src/
-│   ├── taskpane.html      # Main UI with tabbed interface
-│   ├── taskpane.css       # Card-based styling and layout
-│   ├── taskpane.js        # Core logic and Office.js integration
-│   ├── commands.html      # Ribbon command handlers
-│   └── test-standalone.html # UI testing outside Office
-├── config/
-│   ├── manifest.xml       # Office Add-in manifest
-│   └── web.config         # IIS web server configuration
-├── assets/
-│   └── gears.ico          # Custom add-in icon
-├── docs/
-│   ├── instructions.md    # Complete setup guide
-│   └── USAGE.md          # Quick usage reference
-├── .github/
-│   └── copilot-instructions.md # AI coding guidelines
-├── AGENTS.md             # AI agent context and patterns
-├── PROJECT_STRUCTURE.md  # Detailed project organization
-└── LICENSE               # MIT License
-```
 
 ## Development
 

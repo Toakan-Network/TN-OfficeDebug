@@ -125,14 +125,11 @@
             initializeTabs();
         }
         
-        // Log that HTML is loaded
-        window.logDebug('HTML Document loaded');
-        
         // Check if Office.js is loading
         if (typeof Office !== 'undefined') {
-            window.logDebug('Office.js object found');
+            // Office.js object found
         } else {
-            window.logDebug('Office.js object NOT found - script may not have loaded');
+            // Office.js object NOT found
         }
         
         // Tab switching functionality
@@ -160,8 +157,6 @@
             if (selectedButton) {
                 selectedButton.classList.add('active');
             }
-            
-            window.logDebug('Switched to tab', { tabId });
         }
         
         // Initialize tab functionality when DOM is loaded

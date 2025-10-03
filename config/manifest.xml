@@ -5,7 +5,7 @@
   xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
   xsi:type="TaskPaneApp">
   <Id>8a8c8d4e-4f3e-4d3e-8b9e-1f2e3d4c5b6a</Id>
-  <Version>1.0.0.0</Version>
+  <Version>1.0.1</Version>
   <ProviderName>Toakan Network</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Office Debug Tool"/>
@@ -22,7 +22,7 @@
     <Host Name="Presentation"/>
   </Hosts>
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://tools.bighand.services/office-debug/src/taskpane.html"/>
+    <SourceLocation DefaultValue="https://tools.bighand.services/office-debug/src/taskpane.html?v=1.0.0.2"/>
   </DefaultSettings>
   <Permissions>ReadWriteDocument</Permissions>
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
@@ -150,8 +150,8 @@
       </bt:Images>
       <bt:Urls>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://github.com/Toakan-Network/TN-OfficeDebug"/>
-        <bt:Url id="Commands.Url" DefaultValue="https://tools.bighand.services/office-debug/src/commands.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://tools.bighand.services/office-debug/src/taskpane.html"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://tools.bighand.services/office-debug/src/commands.html?v=1.0.0.2"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://tools.bighand.services/office-debug/src/taskpane.html?v=1.0.0.2"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="Office Debug Tool"/>
@@ -165,3 +165,4 @@
     </Resources>
   </VersionOverrides>
 </OfficeApp>
+

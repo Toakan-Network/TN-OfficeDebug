@@ -6,8 +6,10 @@ on:
       - 'v*'  # Trigger on version tags like v1.0.0, v1.2.3, etc.
 
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
+  release:
+    runs-on: 
+      group: ToakanLab
+      labels: [self-hosted, Windows]
     permissions:
       contents: write
       

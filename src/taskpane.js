@@ -457,7 +457,7 @@ function loadAddinsInfo() {
     container.appendChild(createInfoRow('Description', 'Office.js Debug and Diagnostic Tool'));
     
     // Try multiple ways to get the version
-    let version = '1.0.5'; // Current fallback
+    let version = 'x.x.x'; // Non-integer fallback to indicate lookup failure
     if (Office.context.manifest && Office.context.manifest.version) {
       version = Office.context.manifest.version;
     } else if (Office.context.document && Office.context.document.settings) {

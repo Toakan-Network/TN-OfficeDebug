@@ -1,8 +1,5 @@
 /* global Office */
 
-// Add-in version - update this constant with each version bump
-const ADDIN_VERSION = '1.0.8';
-
 Office.onReady((info) => {
   try {
     // Support Word, Excel, and PowerPoint
@@ -458,7 +455,7 @@ function loadAddinsInfo() {
     container.appendChild(createInfoRow('Developer', 'Toakan Network'));
     container.appendChild(createInfoRow('Project Name', 'TN-OfficeDebug'));
     container.appendChild(createInfoRow('Description', 'Office.js Debug and Diagnostic Tool'));
-    container.appendChild(createInfoRow('Version', ADDIN_VERSION));
+    container.appendChild(createInfoRow('Version', Office.context.manifest?.version || 'x.x.x'));
     container.appendChild(createInfoRow('License', 'MIT'));
     
     // Repository Information

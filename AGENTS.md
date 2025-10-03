@@ -96,15 +96,22 @@ if (Office.context.manifest && Office.context.manifest.version) {
 ```
 
 ### Version Management Best Practices
-**NEVER maintain versions in multiple places**
+**CRITICAL LESSON: Office.context.manifest.version is UNRELIABLE**
 ```javascript
-// ✅ Single source of truth - read from manifest
-Office.context.manifest?.version || 'x.x.x'
+// ❌ Office.context.manifest.version often returns undefined/unavailable
+// This API is not consistent across Office environments
 
-// ❌ Dual maintenance creates version drift
-const manifestVersion = '1.0.3'; // in manifest.xml
-const hardcodedVersion = '1.0.0'; // in JavaScript - will get out of sync
+// ✅ For version display in add-ins, use obvious failure indicator
+container.appendChild(createInfoRow('Version', 'x.x.x')); // Shows API limitation clearly
+
+// ❌ Never create dual maintenance (constant + manifest)
+const ADDIN_VERSION = '1.0.8'; // Creates two places to update
+
+// ✅ Accept that version display may show x.x.x due to Office.js limitations
+// This is preferable to maintaining versions in multiple places
 ```
+
+**PRINCIPLE**: Better to show "x.x.x" than create dual maintenance burden
 
 ### Error Handling Pattern
 ```javascript

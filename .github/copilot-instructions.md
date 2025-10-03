@@ -4,7 +4,21 @@ This file provides GitHub Copilot with specific context and coding patterns for 
 
 ## Project Context
 
-TN-OfficeDebug is a Microsoft Office Add-in diagnostic tool for Word, designed primarily for customer support engineers. It provides comprehensive diagnostic information through a secure, tabbed interface with domain-based access control.
+TN-OfficeDebug is a Microsoft Office Add-in diagnostic tool for Word, designed primarily for ### Office.js API Reliability
+```javascript
+// Office.js APIs can be inconsistent across hosts and environments
+// Always test API availability and provide fallbacks
+if (Office.context.manifest && Office.context.manifest.version) {
+  // API is available
+} else {
+  // Graceful fallback with visible failure indicator
+}
+
+// CRITICAL LESSON: Office.context.manifest.version is NOT RELIABLE
+// In practice, this API often returns undefined or is not available
+// DO NOT attempt to read version from Office.context.manifest.version
+// Use obvious failure indicators like 'x.x.x' to show when APIs fail
+```upport engineers. It provides comprehensive diagnostic information through a secure, tabbed interface with domain-based access control.
 
 ## Critical Office.js API Patterns
 

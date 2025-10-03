@@ -397,29 +397,157 @@ function loadWordDocumentInfo(container) {
 }
 
 function loadExcelDocumentInfo(container) {
-  // Excel-specific document information
-  container.appendChild(createInfoRow('Host Application', 'Microsoft Excel'));
-  
-  // Generic document info that works across hosts
-  if (Office.context.document && Office.context.document.url) {
-    container.appendChild(createInfoRow('Document URL', Office.context.document.url));
-  }
-  
-  // Add Excel-specific info here when needed
-  container.appendChild(createInfoRow('Document Type', 'Excel Workbook'));
+  Excel.run(async (context) => {
+    try {
+      const workbook = context.workbook;
+      const properties = workbook.properties;
+      
+      // Load built-in properties
+      properties.load(['title', 'subject', 'author', 'keywords', 'comments', 'creationDate', 'lastAuthor']);
+      
+      // Load custom properties
+      const customProperties = properties.custom;
+      customProperties.load('items');
+      
+      await context.sync();
+      
+      // Host application info
+      container.appendChild(createInfoRow('Host Application', 'Microsoft Excel'));
+      container.appendChild(createInfoRow('Document Type', 'Excel Workbook'));
+      
+      // Document URL
+      if (Office.context.document && Office.context.document.url) {
+        container.appendChild(createInfoRow('Document URL', Office.context.document.url));
+      }
+      
+      // Built-in Document Properties
+      container.appendChild(createInfoRow('Title', properties.title || 'Not set'));
+      container.appendChild(createInfoRow('Subject', properties.subject || 'Not set'));
+      container.appendChild(createInfoRow('Author', properties.author || 'Not set'));
+      container.appendChild(createInfoRow('Keywords', properties.keywords || 'Not set'));
+      container.appendChild(createInfoRow('Comments', properties.comments || 'Not set'));
+      container.appendChild(createInfoRow('Last Author', properties.lastAuthor || 'Not set'));
+      
+      if (properties.creationDate) {
+        container.appendChild(createInfoRow('Creation Date', new Date(properties.creationDate).toLocaleString()));
+      }
+      
+      // Custom Properties Section
+      const separator = document.createElement('div');
+      separator.style.marginTop = '20px';
+      separator.style.marginBottom = '15px';
+      separator.style.fontWeight = 'bold';
+      separator.style.borderTop = '1px solid #ccc';
+      separator.style.paddingTop = '10px';
+      separator.textContent = 'Custom Properties';
+      container.appendChild(separator);
+      
+      if (customProperties.items && customProperties.items.length > 0) {
+        customProperties.items.forEach((customProp, index) => {
+          try {
+            const propRow = createInfoRow(customProp.key, customProp.value);
+            // Different border color for custom properties (green)
+            propRow.style.borderLeft = '4px solid #28a745';
+            container.appendChild(propRow);
+          } catch (propError) {
+            window.logDebug('Error displaying custom property', { 
+              index: index, 
+              error: propError.message 
+            });
+          }
+        });
+        
+        container.appendChild(createInfoRow('Total Custom Properties', customProperties.items.length));
+      } else {
+        const noPropsRow = createInfoRow('Custom Properties', 'None found in this workbook');
+        container.appendChild(noPropsRow);
+      }
+      
+    } catch (error) {
+      window.logDebug('Error in loadExcelDocumentInfo', { error: error.message });
+      container.innerHTML = `<div class="error">Error loading Excel document information: ${error.message}</div>`;
+    }
+  });
 }
 
 function loadPowerPointDocumentInfo(container) {
-  // PowerPoint-specific document information
-  container.appendChild(createInfoRow('Host Application', 'Microsoft PowerPoint'));
-  
-  // Generic document info that works across hosts
-  if (Office.context.document && Office.context.document.url) {
-    container.appendChild(createInfoRow('Document URL', Office.context.document.url));
-  }
-  
-  // Add PowerPoint-specific info here when needed
-  container.appendChild(createInfoRow('Document Type', 'PowerPoint Presentation'));
+  PowerPoint.run(async (context) => {
+    try {
+      const presentation = context.presentation;
+      const properties = presentation.properties;
+      
+      // Load built-in properties
+      properties.load(['title', 'subject', 'author', 'keywords', 'comments', 'creationDate', 'lastAuthor']);
+      
+      // Load custom properties (PowerPoint API 1.7+)
+      const customProperties = properties.custom;
+      customProperties.load('items');
+      
+      await context.sync();
+      
+      // Host application info
+      container.appendChild(createInfoRow('Host Application', 'Microsoft PowerPoint'));
+      container.appendChild(createInfoRow('Document Type', 'PowerPoint Presentation'));
+      
+      // Document URL
+      if (Office.context.document && Office.context.document.url) {
+        container.appendChild(createInfoRow('Document URL', Office.context.document.url));
+      }
+      
+      // Built-in Document Properties
+      container.appendChild(createInfoRow('Title', properties.title || 'Not set'));
+      container.appendChild(createInfoRow('Subject', properties.subject || 'Not set'));
+      container.appendChild(createInfoRow('Author', properties.author || 'Not set'));
+      container.appendChild(createInfoRow('Keywords', properties.keywords || 'Not set'));
+      container.appendChild(createInfoRow('Comments', properties.comments || 'Not set'));
+      container.appendChild(createInfoRow('Last Author', properties.lastAuthor || 'Not set'));
+      
+      if (properties.creationDate) {
+        container.appendChild(createInfoRow('Creation Date', new Date(properties.creationDate).toLocaleString()));
+      }
+      
+      // Custom Properties Section
+      const separator = document.createElement('div');
+      separator.style.marginTop = '20px';
+      separator.style.marginBottom = '15px';
+      separator.style.fontWeight = 'bold';
+      separator.style.borderTop = '1px solid #ccc';
+      separator.style.paddingTop = '10px';
+      separator.textContent = 'Custom Properties';
+      container.appendChild(separator);
+      
+      if (customProperties.items && customProperties.items.length > 0) {
+        customProperties.items.forEach((customProp, index) => {
+          try {
+            const propRow = createInfoRow(customProp.key, customProp.value);
+            // Different border color for custom properties (green)
+            propRow.style.borderLeft = '4px solid #28a745';
+            container.appendChild(propRow);
+          } catch (propError) {
+            window.logDebug('Error displaying custom property', { 
+              index: index, 
+              error: propError.message 
+            });
+          }
+        });
+        
+        container.appendChild(createInfoRow('Total Custom Properties', customProperties.items.length));
+      } else {
+        const noPropsRow = createInfoRow('Custom Properties', 'None found in this presentation');
+        container.appendChild(noPropsRow);
+      }
+      
+    } catch (error) {
+      window.logDebug('Error in loadPowerPointDocumentInfo', { error: error.message });
+      
+      // Check if it's an API version issue
+      if (error.message && error.message.includes('properties')) {
+        container.innerHTML = `<div class="error">Custom properties require PowerPoint API 1.7+. Error: ${error.message}</div>`;
+      } else {
+        container.innerHTML = `<div class="error">Error loading PowerPoint document information: ${error.message}</div>`;
+      }
+    }
+  });
 }
 
 function loadGenericDocumentInfo(container) {
@@ -458,7 +586,7 @@ function loadAddinsInfo() {
     
     // Version from manifest - Office.js doesn't provide runtime access to manifest version
     // Source: Microsoft documentation shows no Office.context.manifest API exists
-    const ADDIN_VERSION = '1.0.17'; // Keep in sync with config/manifest.xml
+    const ADDIN_VERSION = '1.0.18'; // Keep in sync with config/manifest.xml
     container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     

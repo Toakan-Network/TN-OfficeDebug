@@ -4,6 +4,20 @@ This file provides GitHub Copilot with specific context and coding patterns for 
 
 > **📚 For comprehensive project context and AI agent instructions, see [AGENTS.md](AGENTS.md)**
 
+## Documentation Organization
+
+**SOURCE**: [GitHub's official documentation](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/creating-a-default-community-health-file) recommends placing community health files and development documentation in `.github/` directory.
+
+**EVIDENCE**: GitHub automatically recognizes files in `.github/` for:
+- Issue templates
+- Pull request templates  
+- Contributing guidelines
+- Code of conduct
+- Security policies
+- **Development documentation and workflows**
+
+**VERIFICATION**: This structure follows GitHub's established patterns used by major open source projects.
+
 ## Project Context
 
 TN-OfficeDebug is a Microsoft Office Add-in diagnostic tool for Word, designed primarily for ### Office.js API Reliability

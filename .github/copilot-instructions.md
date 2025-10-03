@@ -6,7 +6,33 @@ This file provides GitHub Copilot with specific context and coding patterns for 
 
 TN-OfficeDebug is a Microsoft Office Add-in diagnostic tool for Word, designed primarily for ### Office.js API Reliability
 ```javascript
-// Office.js APIs can be inconsistent across hosts and environments
+### Office.js API Reliability Issues
+**CRITICAL**: Office.js APIs can be inconsistent across hosts and environments
+```javascript
+// ❌ Don't assume APIs work as documented
+const version = Office.context.manifest.version; // May be undefined
+
+// ✅ Always test availability and use obvious failure indicators
+const version = Office.context.manifest?.version || 'x.x.x';
+
+// ✅ Use defensive programming patterns
+if (Office.context.manifest && Office.context.manifest.version) {
+  // API available - use it
+} else {
+  // API unavailable - clear failure indication
+}
+
+// CRITICAL LESSON: Office.context.manifest.version is NOT RELIABLE
+// VERIFIED: Testing in Office environment shows Office.context.manifest is undefined
+// SOURCE: User testing with debugging code in actual Office environment
+// METHOD: Added debugging code to inspect Office.context.manifest properties
+// RESULT: Office.context.manifest is undefined - API not available
+// CONCLUSION: 'x.x.x' fallback is correct behavior, not an error
+
+// MANIFEST FORMAT DEPENDENCY:
+// Office.context.manifest.version availability depends on manifest format and Office version
+// This project uses Traditional Manifest = 'x.x.x' is expected behavior
+```
 // Always test API availability and provide fallbacks
 if (Office.context.manifest && Office.context.manifest.version) {
   // API is available

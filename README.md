@@ -1,17 +1,5 @@
 # TN-OfficeDebug
 
-## Features
-
-✨ **Tabbed Interface**: Organized diagnostic information across Document Info, Office Environment, System Info, and Add-in Info tabs
-
-📝 **Custom Properties Management**: Full CRUD support for Word document custom properties with green highlighting
-
-🎨 **Card-Based Layout**: Professional UI with consistent styling to prevent text overflow and improve readability
-
-🔄 **Real-Time Diagnostics**: Live information gathering optimized for customer support workflows
-
-🛠️ **Comprehensive Error Handling**: Graceful degradation when Office.js APIs are unavailable display various hidden settings / debug information in an Office.js window for Microsoft Word.
-
 ## Overview
 
 This Office Add-in provides customer support engineers and IT professionals with comprehensive diagnostic information for Microsoft Word troubleshooting:

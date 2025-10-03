@@ -100,6 +100,8 @@ if (Office.context.manifest && Office.context.manifest.version) {
 ```javascript
 // ❌ Office.context.manifest.version often returns undefined/unavailable
 // This API is not consistent across Office environments
+// REASON: Only available with Unified Manifest (JSON format)
+// This project uses Traditional XML Manifest = API not supported
 
 // ✅ For version display in add-ins, use obvious failure indicator
 container.appendChild(createInfoRow('Version', 'x.x.x')); // Shows API limitation clearly
@@ -107,11 +109,12 @@ container.appendChild(createInfoRow('Version', 'x.x.x')); // Shows API limitatio
 // ❌ Never create dual maintenance (constant + manifest)
 const ADDIN_VERSION = '1.0.8'; // Creates two places to update
 
-// ✅ Accept that version display may show x.x.x due to Office.js limitations
+// ✅ Accept that version display may show x.x.x due to manifest format limitations
 // This is preferable to maintaining versions in multiple places
 ```
 
 **PRINCIPLE**: Better to show "x.x.x" than create dual maintenance burden
+**CONTEXT**: Traditional XML manifests don't support Office.context.manifest.version API
 
 ### Error Handling Pattern
 ```javascript

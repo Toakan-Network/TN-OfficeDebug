@@ -18,6 +18,11 @@ if (Office.context.manifest && Office.context.manifest.version) {
 // In practice, this API often returns undefined or is not available
 // DO NOT attempt to read version from Office.context.manifest.version
 // Use obvious failure indicators like 'x.x.x' to show when APIs fail
+
+// MANIFEST FORMAT DEPENDENCY:
+// Office.context.manifest.version is only available with Unified Manifest (JSON)
+// Traditional XML manifests do not support this API
+// This project uses Traditional Manifest = 'x.x.x' is expected behavior
 ```upport engineers. It provides comprehensive diagnostic information through a secure, tabbed interface with domain-based access control.
 
 ## Critical Office.js API Patterns

@@ -273,6 +273,22 @@ git add .
 git commit -m "type(scope): description"
 ```
 
+### Git Tool Consistency
+```bash
+# CRITICAL: Maintain consistent git tooling throughout each session
+# Once a git workflow is established (run_in_terminal vs GitKraken), stick with it
+# Do not switch git tools mid-session without explicit user request or clear justification
+# Examples:
+# - If session starts with run_in_terminal + git commands, continue using that
+# - If session starts with GitKraken tools, continue using those
+# - Switching confuses workflow and reduces user experience quality
+
+# Preferred approach: Use run_in_terminal with standard git commands unless:
+# 1. User specifically requests GitKraken
+# 2. GitKraken-specific features are genuinely needed
+# 3. Consistent with project's established workflow
+```
+
 ### Agent Instruction Maintenance
 ```bash
 # When new context or patterns emerge during development:

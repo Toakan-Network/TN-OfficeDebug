@@ -20,6 +20,12 @@ This document provides comprehensive context and instructions for AI agents work
 ### Project Overview
 **TN-OfficeDebug** is a comprehensive diagnostic and debugging tool for Microsoft Office Add-ins, specifically designed for Word integration with customer support capabilities. The tool provides detailed diagnostic information about the Office environment, document properties, system configuration, and add-in status.
 
+### Design Principles
+- **Keep It Simple**: Focus only on essential Office add-in functionality, avoid unnecessary scripts or tooling
+- **Customer Support First**: Every feature must serve the diagnostic workflow of support engineers
+- **Minimal Dependencies**: Use only what Office.js and basic web technologies provide
+- **Single Source of Truth**: Avoid duplicating configuration or version information
+
 ### Primary Use Case
 - **Customer Support Engineering**: Diagnostic tool for troubleshooting Office add-in issues
 - **Development & Testing**: Environment validation and API compatibility checking
@@ -70,6 +76,34 @@ Office.context.auth (not available in Word)
 // ✅ Use these patterns instead:
 context.document.properties.load(['title', 'author'])
 await context.sync()
+```
+
+### Office.js API Reliability Issues
+**CRITICAL**: Office.js APIs can be inconsistent across hosts and environments
+```javascript
+// ❌ Don't assume APIs work as documented
+const version = Office.context.manifest.version; // May be undefined
+
+// ✅ Always test availability and use obvious failure indicators
+const version = Office.context.manifest?.version || 'x.x.x';
+
+// ✅ Use defensive programming patterns
+if (Office.context.manifest && Office.context.manifest.version) {
+  // API available - use it
+} else {
+  // API unavailable - clear failure indication
+}
+```
+
+### Version Management Best Practices
+**NEVER maintain versions in multiple places**
+```javascript
+// ✅ Single source of truth - read from manifest
+Office.context.manifest?.version || 'x.x.x'
+
+// ❌ Dual maintenance creates version drift
+const manifestVersion = '1.0.3'; // in manifest.xml
+const hardcodedVersion = '1.0.0'; // in JavaScript - will get out of sync
 ```
 
 ### Error Handling Pattern

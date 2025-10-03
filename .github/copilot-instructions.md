@@ -357,6 +357,37 @@ git commit -m "docs: capture new development pattern from session context"
 // 4. Validate manifest with Office validation tools
 ```
 
+## Version Management Best Practices
+
+### Single Source of Truth for Versions
+```javascript
+// ✅ Read version dynamically from manifest
+container.appendChild(createInfoRow('Version', Office.context.manifest?.version || 'x.x.x'));
+
+// ❌ Never hardcode versions in multiple places
+container.appendChild(createInfoRow('Version', '1.0.3')); // Creates dual maintenance
+```
+
+### Effective Fallback Strategies
+```javascript
+// ✅ Use obvious failure indicators
+let version = 'x.x.x'; // Makes API failures immediately visible
+
+// ❌ Hide problems with alternate hardcoded values
+let version = '1.0.0'; // Masks when Office.context.manifest.version fails
+```
+
+### Office.js API Reliability
+```javascript
+// Office.js APIs can be inconsistent across hosts/environments
+// Always test API availability before relying on them
+if (Office.context.manifest && Office.context.manifest.version) {
+  // API is available
+} else {
+  // Graceful fallback with visible failure indicator
+}
+```
+
 ## Testing Patterns
 
 ### Cross-Environment Testing

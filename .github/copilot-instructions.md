@@ -2,6 +2,8 @@
 
 This file provides GitHub Copilot with specific context and coding patterns for the TN-OfficeDebug project. It ensures consistent, secure, and maintainable code generation that follows established project patterns.
 
+> **📚 For comprehensive project context and AI agent instructions, see [AGENTS.md](AGENTS.md)**
+
 ## Project Context
 
 TN-OfficeDebug is a Microsoft Office Add-in diagnostic tool for Word, designed primarily for ### Office.js API Reliability

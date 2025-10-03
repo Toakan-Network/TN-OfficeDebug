@@ -257,6 +257,20 @@ window.logDebug('Context description', {
 - **No Repetition**: Do not repeat yourself when solving issues - try different approaches
 - **Acknowledge Limitations**: If a problem occurs and cannot be resolved, inform the user clearly rather than continuing ineffective attempts
 
+### MANDATORY VERIFICATION ENFORCEMENT
+- **Self-Monitoring Triggers**: Before using words "because", "since", "due to", "as we know" → STOP and verify
+- **Required Evidence**: Every technical claim must have: Source + Method + Result
+- **Assumption Detection**: If making statements about "how things work" → gather evidence first
+- **Theory vs Fact**: Clearly distinguish between "I tested this: [result]" vs "Documentation states: [citation]"
+- **User Challenge Protocol**: When user says "why are you assuming" → immediately acknowledge, gather evidence, correct approach
+
+### VERIFICATION WORKFLOW
+1. **Identify**: Is this an assumption or verified fact?
+2. **Gather**: Use tools to collect evidence (grep_search, read_file, run_in_terminal)
+3. **Test**: When possible, create minimal test cases to verify behavior
+4. **Cite**: Show exact source of information with specific details
+5. **Qualify**: State confidence level and limitations of information
+
 ## 🚨 Critical Lessons Learned
 
 ### Major Issues Resolved

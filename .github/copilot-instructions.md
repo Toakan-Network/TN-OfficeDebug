@@ -367,6 +367,25 @@ git commit -m "docs: capture new development pattern from session context"
 // Source: project file analysis - [file path and content]
 ```
 
+### MANDATORY VERIFICATION CHECKPOINTS
+```javascript
+// ENFORCEMENT: Before making ANY technical claim, agent MUST:
+// 1. STOP and identify: "Am I about to make an assumption?"
+// 2. GATHER evidence using available tools (grep_search, read_file, run_in_terminal)
+// 3. CITE the specific source of information (file content, command output, documentation)
+// 4. STATE when information is verified vs theoretical
+
+// VIOLATION EXAMPLES TO AVOID:
+// ❌ "Office.context.manifest.version is unreliable because Traditional manifests don't support it"
+// ✅ "Testing shows Office.context.manifest.version returns undefined. Source: debugging code output from Office environment"
+
+// ❌ "This API doesn't work in Word"
+// ✅ "Error occurred when testing this API: [actual error message]. Source: console output"
+
+// AUTO-TRIGGER: When agent says "because", "since", "due to", "as we know"
+// → MANDATORY SOURCE VERIFICATION REQUIRED
+```
+
 ### Configuration Updates
 ```javascript
 // When updating manifest or configuration files:

@@ -266,8 +266,19 @@ refactor(security): improve domain detection
 # 1. Make file changes
 # 2. Provide summary of changes to user
 # 3. Get confirmation before committing
-# 4. Execute git add and git commit
-# 5. No exceptions - every change must be committed
+# 4. MANDATORY: Increment version number in manifest.xml before commit
+# 5. Execute git add and git commit
+# 6. No exceptions - every change must be committed
+
+# SEMANTIC VERSIONING STRATEGY (REQUIRED):
+# Before EVERY commit, increment version in config/manifest.xml:
+# - Major (x.0.0): Brand new components, breaking changes, major features
+# - Minor (1.x.0): New features, functionality additions, significant enhancements
+# - Patch (1.0.x): Bug fixes, cache busting, small improvements, code cleanup
+
+# Office Cache Prevention:
+# Version increments in manifest.xml automatically invalidate Office cache
+# This is the ONLY cache prevention method - no external scripts needed
 
 git add .
 git commit -m "type(scope): description"

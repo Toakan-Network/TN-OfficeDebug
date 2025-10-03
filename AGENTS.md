@@ -188,6 +188,11 @@ window.logDebug('Context description', {
 - **Mandatory Commits**: ALWAYS git add and commit after each file change or set of related changes
 - **Change Summary Required**: Always provide a summary of changes before creating commits
 - **User Confirmation**: Get confirmation from user after explaining changes but before executing git commit
+- **MANDATORY Version Increment**: Before EVERY commit, increment version in config/manifest.xml:
+  - **Major (x.0.0)**: Brand new components, breaking changes, major features
+  - **Minor (1.x.0)**: New features, functionality additions, significant enhancements  
+  - **Patch (1.0.x)**: Bug fixes, cache busting, small improvements, code cleanup
+- **Office Cache Prevention**: Version increments automatically invalidate Office cache - no scripts needed
 - **Conventional Commits**: feat, fix, docs, style, refactor, test, chore
 - **Scopes**: ui, api, security, config, manifest
 - **Concise Messages**: Keep commit messages professional and succinct, avoid unnecessary details

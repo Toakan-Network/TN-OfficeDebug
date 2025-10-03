@@ -303,6 +303,26 @@ git add AGENTS.md .github/copilot-instructions.md README.md
 git commit -m "docs: capture new development pattern from session context"
 ```
 
+### Automatic Instruction Update Triggers
+```bash
+# CRITICAL: Immediately update agent instructions when these occur:
+# 1. User corrects an AI mistake or approach - capture the correct pattern
+# 2. User provides guidance on workflow, tools, or methodology
+# 3. User explains "why" something should be done differently
+# 4. Discovery of new project patterns, constraints, or requirements
+# 5. Resolution of issues that could affect future sessions
+
+# Trigger phrases that should prompt instruction updates:
+# - "You should have..."
+# - "Why did you..."
+# - "Don't do that, do this instead..."
+# - "Going forward..."
+# - "The correct way is..."
+
+# Process: Recognize → Update Instructions → Commit → Continue
+# Do NOT wait for user prompting - make this automatic
+```
+
 ### Verification and Problem-Solving Standards
 ```javascript
 // CRITICAL: Follow these standards for all AI assistance

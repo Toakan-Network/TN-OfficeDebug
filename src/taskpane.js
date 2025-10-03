@@ -1,5 +1,8 @@
 /* global Office */
 
+// Add-in version - update this constant with each version bump
+const ADDIN_VERSION = '1.0.8';
+
 Office.onReady((info) => {
   try {
     // Support Word, Excel, and PowerPoint
@@ -455,22 +458,7 @@ function loadAddinsInfo() {
     container.appendChild(createInfoRow('Developer', 'Toakan Network'));
     container.appendChild(createInfoRow('Project Name', 'TN-OfficeDebug'));
     container.appendChild(createInfoRow('Description', 'Office.js Debug and Diagnostic Tool'));
-    
-    // Try multiple ways to get the version
-    let version = 'x.x.x'; // Non-integer fallback to indicate lookup failure
-    if (Office.context.manifest && Office.context.manifest.version) {
-      version = Office.context.manifest.version;
-    } else if (Office.context.document && Office.context.document.settings) {
-      // Alternative approach - check if version is available elsewhere
-      try {
-        const manifestInfo = Office.context.document.settings.get('manifestVersion');
-        if (manifestInfo) version = manifestInfo;
-      } catch (e) {
-        // Ignore settings errors
-      }
-    }
-    
-    container.appendChild(createInfoRow('Version', version));
+    container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     
     // Repository Information
@@ -540,17 +528,6 @@ function loadAddinsInfo() {
     // Current add-in manifest info
     if (Office.context.manifest) {
       container.appendChild(createInfoRow('Manifest ID', Office.context.manifest.id || 'N/A', true));
-      
-      // Debug manifest properties
-      const manifestKeys = Object.keys(Office.context.manifest);
-      container.appendChild(createInfoRow('Manifest Properties', manifestKeys.join(', '), true));
-      
-      // Try to get version specifically
-      if (Office.context.manifest.version) {
-        container.appendChild(createInfoRow('Manifest Version Available', Office.context.manifest.version));
-      } else {
-        container.appendChild(createInfoRow('Manifest Version Available', 'No version property found'));
-      }
     } else {
       container.appendChild(createInfoRow('Manifest Available', 'No - Office.context.manifest is undefined'));
     }

@@ -455,7 +455,22 @@ function loadAddinsInfo() {
     container.appendChild(createInfoRow('Developer', 'Toakan Network'));
     container.appendChild(createInfoRow('Project Name', 'TN-OfficeDebug'));
     container.appendChild(createInfoRow('Description', 'Office.js Debug and Diagnostic Tool'));
+    
+    // Debug the manifest version issue - verify what's actually available
+    let versionDebug = '';
+    if (typeof Office !== 'undefined' && Office.context) {
+      if (Office.context.manifest) {
+        const manifestKeys = Object.keys(Office.context.manifest);
+        versionDebug = `Manifest exists. Keys: ${manifestKeys.join(', ')}. Version: ${Office.context.manifest.version}`;
+      } else {
+        versionDebug = 'Office.context.manifest is undefined';
+      }
+    } else {
+      versionDebug = 'Office.context not available';
+    }
+    
     container.appendChild(createInfoRow('Version', Office.context.manifest?.version || 'x.x.x'));
+    container.appendChild(createInfoRow('Version Debug', versionDebug, true));
     container.appendChild(createInfoRow('License', 'MIT'));
     
     // Repository Information

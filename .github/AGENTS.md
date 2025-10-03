@@ -376,7 +376,140 @@ window.logDebug('Context description', {
 - **Project Structure**: `/PROJECT_STRUCTURE.md`
 - **Git Workflow**: `/.github/COMMIT_STRATEGY.md`
 
-## 🔮 Future Development Considerations
+## � Release Automation & Deployment
+
+### GitHub Actions Release Workflow
+**SOURCE**: Implemented in `.github/workflows/release.yml` 
+**TRIGGER**: Git tags matching `v*` pattern (e.g., `v1.0.17`)
+**PURPOSE**: Generate clean, minimal deployment packages automatically
+
+#### Automated Release Features
+- **URL Sanitization**: Replaces hardcoded URLs in `manifest.xml` with `YOUR-DOMAIN.com` placeholders
+- **Minimal Package Creation**: Includes only essential files for deployment (`src/`, `config/`, `README.md`, `LICENSE`)
+- **Automatic Changelog**: Generated from conventional commits with emoji categorization
+- **Validation Pipeline**: Version validation, file existence checks, structure verification
+- **Deployment Instructions**: Automatically generated with each release
+
+#### Key Components
+```yaml
+# Release trigger pattern
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Essential workflow steps
+1. Checkout code
+2. Validate version format 
+3. Generate changelog from commits
+4. Sanitize URLs in manifest
+5. Create minimal deployment ZIP
+6. Create GitHub release with assets
+```
+
+#### Release Package Contents
+**INCLUDED**: 
+- `src/` directory (taskpane.html, taskpane.js, taskpane.css, commands.html)
+- `config/` directory (manifest.xml with sanitized URLs, web.config)
+- `README.md` and `LICENSE`
+- Generated `CHANGELOG.md` for this release
+- `DEPLOYMENT.md` with setup instructions
+
+**EXCLUDED**:
+- Development files (package.json, test files)
+- Documentation beyond README
+- GitHub workflow files
+- Any scripts or build tools
+
+#### Conventional Commit Categories
+```bash
+# Emoji-categorized changelog generation
+feat: 🚀 New features
+fix: 🐛 Bug fixes  
+docs: 📝 Documentation updates
+style: 💄 UI/styling changes
+refactor: ♻️ Code refactoring
+perf: ⚡ Performance improvements
+test: ✅ Testing additions
+chore: 🔧 Maintenance tasks
+```
+
+### Enhanced Version Increment Enforcement
+**CRITICAL LESSON**: Version increments are easily forgotten and MUST be mandatory before every commit
+
+#### Mandatory Version Workflow
+```bash
+# REQUIRED SEQUENCE - NO EXCEPTIONS:
+1. Make code changes
+2. Update version in config/manifest.xml (MANDATORY)
+3. Sync ADDIN_VERSION constant in src/taskpane.js if present
+4. Git add and commit changes
+5. For releases: Create git tag matching new version
+
+# VERSION INCREMENT RULES:
+# - Major (x.0.0): Breaking changes, new major components
+# - Minor (1.x.0): New features, significant enhancements  
+# - Patch (1.0.x): Bug fixes, cache busting, minor improvements
+```
+
+#### Office Cache Busting Strategy
+**PRINCIPLE**: Version increments automatically invalidate Office add-in cache
+**METHOD**: Every manifest.xml version change forces Office to reload add-in
+**ADVANTAGE**: No additional cache-busting scripts or techniques needed
+**ENFORCEMENT**: Mandatory version increment before every commit ensures cache prevention
+
+#### Version Synchronization Pattern
+```javascript
+// Keep ADDIN_VERSION in sync with manifest when present
+// Source: config/manifest.xml <Version>1.0.x</Version>
+const ADDIN_VERSION = '1.0.17'; // Must match manifest version
+
+// Display version with fallback for API limitations
+container.appendChild(createInfoRow('Version', ADDIN_VERSION));
+```
+
+### Release Automation Benefits
+1. **Eliminates Manual Errors**: No manual ZIP creation or file selection
+2. **Consistent Package Structure**: Standardized deployment packages every time
+3. **Professional Presentation**: Clean releases with proper documentation
+4. **URL Security**: Prevents accidental hardcoded URL exposure in releases
+5. **Traceability**: Automatic changelog links commits to releases
+6. **Validation Pipeline**: Catches common errors before release creation
+
+### Release Testing & Validation
+```bash
+# Testing release workflow locally
+git tag v1.0.17
+git push origin v1.0.17
+
+# Validation checklist:
+✓ Manifest URLs sanitized to YOUR-DOMAIN.com
+✓ Only essential files included in ZIP
+✓ Changelog generated correctly
+✓ Version numbers consistent across files
+✓ Deployment instructions accurate
+```
+
+### Documentation Organization Standards
+**SOURCE**: [GitHub Community Health Files Documentation](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/creating-a-default-community-health-file)
+**EVIDENCE**: GitHub automatically recognizes files in `.github/` directory for community health and development documentation
+**VERIFICATION**: Following established patterns used by major open source projects
+
+#### Proper File Organization
+```
+/.github/
+├── workflows/          # GitHub Actions workflows
+├── AGENTS.md          # AI agent instructions
+├── copilot-instructions.md  # GitHub Copilot context
+├── DOCUMENTATION_SOURCES.md # Official citations
+└── COMMIT_STRATEGY.md # Git workflow documentation
+
+/docs/                 # User-facing documentation
+├── instructions.md    # Setup guide  
+└── USAGE.md          # Quick reference
+```
+
+## �🔮 Future Development Considerations
 
 ### Potential Enhancements
 - **Additional Office Host Support**: Excel, PowerPoint integration

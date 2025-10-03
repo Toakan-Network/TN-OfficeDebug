@@ -1,0 +1,228 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0, v1.2.3, etc.
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          
+      - name: Validate version matches manifest
+        run: |
+          MANIFEST_VERSION=$(grep -o '<Version>[^<]*</Version>' config/manifest.xml | sed 's/<[^>]*>//g')
+          TAG_VERSION="${{ steps.version.outputs.version }}"
+          echo "Manifest version: $MANIFEST_VERSION"
+          echo "Tag version: $TAG_VERSION"
+          if [ "$MANIFEST_VERSION" != "$TAG_VERSION" ]; then
+            echo "Error: Version mismatch between tag ($TAG_VERSION) and manifest ($MANIFEST_VERSION)"
+            exit 1
+          fi
+          
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            echo "## Changes" > changelog.md
+            echo "* Initial release" >> changelog.md
+          else
+            echo "## Changes since $PREV_TAG" > changelog.md
+            echo "" >> changelog.md
+            
+            # Generate changelog from conventional commits
+            git log --pretty=format:"* %s" "$PREV_TAG..HEAD" | \
+              grep -E "^* (feat|fix|docs|style|refactor|test|chore)" | \
+              sed 's/^* feat/* ✨ Feature/' | \
+              sed 's/^* fix/* 🐛 Fix/' | \
+              sed 's/^* docs/* 📚 Documentation/' | \
+              sed 's/^* style/* 💎 Style/' | \
+              sed 's/^* refactor/* ♻️ Refactor/' | \
+              sed 's/^* test/* 🧪 Test/' | \
+              sed 's/^* chore/* 🔧 Maintenance/' >> changelog.md
+              
+            # Add other commits under "Other changes"
+            OTHER_COMMITS=$(git log --pretty=format:"* %s" "$PREV_TAG..HEAD" | \
+              grep -v -E "^* (feat|fix|docs|style|refactor|test|chore)")
+            
+            if [ ! -z "$OTHER_COMMITS" ]; then
+              echo "" >> changelog.md
+              echo "### Other changes:" >> changelog.md
+              echo "$OTHER_COMMITS" >> changelog.md
+            fi
+          fi
+          
+          # Output changelog for use in release
+          echo 'changelog<<EOF' >> $GITHUB_OUTPUT
+          cat changelog.md >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+          
+      - name: Prepare deployment package
+        run: |
+          echo "🚀 Creating minimal deployment package (NO scripts included)..."
+          
+          # Create deployment directory
+          mkdir -p release-package
+          
+          echo "📦 Copying ONLY essential application files..."
+          cp src/taskpane.html release-package/
+          cp src/taskpane.js release-package/
+          cp src/taskpane.css release-package/
+          cp src/commands.html release-package/
+          
+          echo "📦 Copying configuration files..."
+          cp config/manifest.xml release-package/
+          cp config/web.config release-package/
+          
+          echo "📦 Copying documentation..."
+          cp LICENSE release-package/
+          cp README.md release-package/
+          
+          echo "🧹 Sanitizing URLs in manifest.xml..."
+          # Replace hardcoded URLs with placeholder tokens
+          sed -i 's|https://[^/]*/|https://YOUR-DOMAIN.com/|g' release-package/manifest.xml
+          sed -i 's|http://localhost:[0-9]*/|https://YOUR-DOMAIN.com/|g' release-package/manifest.xml
+          
+          # Update paths for flat deployment structure (all files in root)
+          sed -i 's|https://YOUR-DOMAIN.com/src/|https://YOUR-DOMAIN.com/|g' release-package/manifest.xml
+          sed -i 's|https://YOUR-DOMAIN.com/config/|https://YOUR-DOMAIN.com/|g' release-package/manifest.xml
+          
+          echo "📝 Creating deployment instructions..."
+          cat > release-package/DEPLOYMENT.md << 'EOF'
+          # TN-OfficeDebug Deployment Package
+          
+          This package contains ONLY the files needed to deploy the TN-OfficeDebug Office Add-in.
+          
+          ## Files Included
+          
+          ### Core Application Files
+          - taskpane.html - Main add-in interface
+          - taskpane.js - Core diagnostic functionality  
+          - taskpane.css - Styling and layout
+          - commands.html - Command interface
+          
+          ### Configuration
+          - manifest.xml - Office Add-in manifest (URLs sanitized - MUST UPDATE)
+          - web.config - IIS configuration with CORS headers
+          
+          ### Documentation
+          - README.md - Project documentation
+          - LICENSE - MIT license
+          - DEPLOYMENT.md - This file
+          
+          ## Pre-Deployment Steps
+          
+          1. Update URLs in manifest.xml
+             - Replace https://YOUR-DOMAIN.com/ with your actual hosting domain
+             - Ensure all paths point to your web server
+          
+          2. Configure web server
+             - Must use HTTPS for Office Online integration
+             - Configure proper CORS headers
+             - Set correct Content-Type headers for .js, .css, .html files
+          
+          3. Test manifest
+             - Validate manifest file with Office Developer tools
+             - Test sideloading in Word
+          
+          ## Required Web Server Configuration
+          
+          - HTTPS required for Office Online integration
+          - CORS headers must allow Office domains  
+          - Content-Type headers properly configured
+          
+          ## Deployment Structure
+          
+          Deploy all files to the root of your web server or subdirectory. Update manifest.xml URLs to match your deployment location.
+          
+          ## Validation Checklist
+          
+          Before going live, verify:
+          - All URLs in manifest.xml point to your domain
+          - Web server serves files with correct MIME types
+          - HTTPS certificate is valid
+          - Office can access your domain (test with Office Online)
+          - Add-in loads successfully in Word
+          
+          See README.md for detailed deployment instructions.
+          EOF
+          
+          echo "✅ Deployment package prepared successfully!"
+          echo ""
+          echo "📋 Package contents:"
+          ls -la release-package/
+          echo ""
+          
+          echo "🔍 Validating package..."
+          # Verify essential files exist
+          for file in taskpane.html taskpane.js taskpane.css commands.html manifest.xml web.config LICENSE README.md DEPLOYMENT.md; do
+            if [ ! -f "release-package/$file" ]; then
+              echo "❌ Missing essential file: $file"
+              exit 1
+            fi
+          done
+          
+          # Verify URLs were sanitized
+          if grep -q "localhost" release-package/manifest.xml; then
+            echo "❌ Found localhost URLs in manifest - sanitization failed"
+            exit 1
+          fi
+          
+          # Verify no development files included
+          if [ -d "release-package/.github" ] || [ -d "release-package/scripts" ]; then
+            echo "❌ Development directories found in package"
+            exit 1
+          fi
+          
+          echo "✅ Package validation passed!"
+          echo "📦 Ready for clean deployment - no scripts or development files included!"
+          
+      - name: Create ZIP archive
+        run: |
+          cd release-package
+          zip -r "../TN-OfficeDebug-${{ steps.version.outputs.version }}.zip" .
+          cd ..
+          echo "📦 Created: TN-OfficeDebug-${{ steps.version.outputs.version }}.zip"
+          
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Release ${{ steps.version.outputs.version }}"
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: |
+            TN-OfficeDebug-${{ steps.version.outputs.version }}.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Upload deployment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-package-${{ steps.version.outputs.version }}
+          path: release-package/
+          retention-days: 90

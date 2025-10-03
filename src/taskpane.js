@@ -455,7 +455,7 @@ function loadAddinsInfo() {
     container.appendChild(createInfoRow('Developer', 'Toakan Network'));
     container.appendChild(createInfoRow('Project Name', 'TN-OfficeDebug'));
     container.appendChild(createInfoRow('Description', 'Office.js Debug and Diagnostic Tool'));
-    container.appendChild(createInfoRow('Version', '1.0.3'));
+    container.appendChild(createInfoRow('Version', Office.context.manifest?.version || '1.0.3'));
     container.appendChild(createInfoRow('License', 'MIT'));
     
     // Repository Information
@@ -525,7 +525,6 @@ function loadAddinsInfo() {
     // Current add-in manifest info
     if (Office.context.manifest) {
       container.appendChild(createInfoRow('Manifest ID', Office.context.manifest.id || 'N/A', true));
-      container.appendChild(createInfoRow('Manifest Version', Office.context.manifest.version || 'N/A'));
     }
     
     // Add-in UI

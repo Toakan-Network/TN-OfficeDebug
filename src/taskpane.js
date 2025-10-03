@@ -455,7 +455,7 @@ function loadAddinsInfo() {
     container.appendChild(createInfoRow('Developer', 'Toakan Network'));
     container.appendChild(createInfoRow('Project Name', 'TN-OfficeDebug'));
     container.appendChild(createInfoRow('Description', 'Office.js Debug and Diagnostic Tool'));
-    container.appendChild(createInfoRow('Version', '1.0.0'));
+    container.appendChild(createInfoRow('Version', '1.0.3'));
     container.appendChild(createInfoRow('License', 'MIT'));
     
     // Repository Information

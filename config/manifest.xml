@@ -5,7 +5,7 @@
   xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
   xsi:type="TaskPaneApp">
   <Id>8a8c8d4e-4f3e-4d3e-8b9e-1f2e3d4c5b6a</Id>
-  <Version>1.0.22</Version>
+  <Version>1.0.23</Version>
   <ProviderName>Toakan Network</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Office Debug Tool"/>

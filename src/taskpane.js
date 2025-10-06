@@ -513,11 +513,29 @@ function loadPowerPointDocumentInfo(container) {
   // Add basic info first to show we're at least getting called
   container.appendChild(createInfoRow('Host Application', 'Microsoft PowerPoint'));
   container.appendChild(createInfoRow('Document Type', 'PowerPoint Presentation'));
-  container.appendChild(createInfoRow('Debug', 'PowerPoint function called successfully'));
   
-  // Document URL
-  if (Office.context.document && Office.context.document.url) {
-    container.appendChild(createInfoRow('Document URL', Office.context.document.url));
+  // Always try basic Office.context first as fallback
+  try {
+    window.logDebug('Loading basic document info from Office.context');
+    
+    // Document URL and basic info
+    if (Office.context.document && Office.context.document.url) {
+      const url = Office.context.document.url;
+      const fileName = url.split('/').pop().split('\\').pop();
+      container.appendChild(createInfoRow('File Name', fileName || 'Unknown'));
+      container.appendChild(createInfoRow('Document URL', url));
+    }
+    
+    // Document mode
+    if (Office.context.document && Office.context.document.mode !== undefined) {
+      const mode = Office.context.document.mode === Office.DocumentMode.ReadOnly ? 'Read-Only' : 'Read-Write';
+      container.appendChild(createInfoRow('Document Mode', mode));
+    }
+    
+    window.logDebug('Basic document info loaded successfully');
+    
+  } catch (basicError) {
+    window.logDebug('Failed to load basic document info', { error: basicError.message });
   }
   
   // Check if PowerPoint.run is available at all
@@ -540,7 +558,7 @@ function loadPowerPointDocumentInfo(container) {
   window.logDebug('PowerPoint API 1.7 check', { available: api17Available });
   
   if (!api17Available) {
-    // Fallback for older PowerPoint versions
+    // Fallback for older PowerPoint versions - show note but don't return
     const apiNote = document.createElement('div');
     apiNote.style.marginTop = '20px';
     apiNote.style.padding = '10px';
@@ -549,12 +567,44 @@ function loadPowerPointDocumentInfo(container) {
     apiNote.style.borderRadius = '4px';
     apiNote.style.fontSize = '11px';
     apiNote.style.color = '#856404';
-    apiNote.textContent = 'Note: Document properties require PowerPoint API 1.7+. This version of PowerPoint does not support detailed document property access.';
+    apiNote.textContent = 'Note: Document properties require PowerPoint API 1.7+. This version of PowerPoint has limited document property support.';
     container.appendChild(apiNote);
+    
+    // Try to load custom properties using basic Office APIs
+    try {
+      if (Office.context.document && Office.context.document.customProperties) {
+        window.logDebug('Attempting to load custom properties via Office.context');
+        Office.context.document.customProperties.getAsync((result) => {
+          if (result.status === Office.AsyncResultStatus.Succeeded) {
+            window.logDebug('Custom properties loaded successfully', result.value);
+            if (result.value && result.value.length > 0) {
+              const separator = document.createElement('div');
+              separator.style.marginTop = '20px';
+              separator.style.marginBottom = '15px';
+              separator.style.fontWeight = 'bold';
+              separator.style.borderTop = '1px solid #ccc';
+              separator.style.paddingTop = '10px';
+              separator.textContent = 'Custom Properties';
+              container.appendChild(separator);
+              
+              result.value.forEach(prop => {
+                const row = createInfoRow(prop.name, prop.value);
+                row.style.borderLeft = '4px solid #28a745';
+                container.appendChild(row);
+              });
+            }
+          } else {
+            window.logDebug('Failed to load custom properties', result.error);
+          }
+        });
+      }
+    } catch (customError) {
+      window.logDebug('Error loading custom properties via Office.context', { error: customError.message });
+    }
     return;
   }
 
-  // Try PowerPoint.run
+  // Try PowerPoint.run only if API 1.7 is available
   window.logDebug('Attempting PowerPoint.run');
   PowerPoint.run(async (context) => {
     try {
@@ -649,7 +699,21 @@ function loadPowerPointDocumentInfo(container) {
       stack: runError.stack,
       name: runError.name 
     });
-    displaySafeError(container, `PowerPoint.run failed: ${runError.message}`);
+    
+    // If PowerPoint.run fails with GeneralException, provide helpful fallback message
+    displaySafeError(container, `PowerPoint.run failed: ${runError.message || 'GeneralException'}. PowerPoint has limited API support compared to Word and Excel.`);
+    
+    // Add informational note about PowerPoint limitations
+    const limitationNote = document.createElement('div');
+    limitationNote.style.marginTop = '15px';
+    limitationNote.style.padding = '10px';
+    limitationNote.style.backgroundColor = '#e2e3e5';
+    limitationNote.style.border = '1px solid #d6d8db';
+    limitationNote.style.borderRadius = '4px';
+    limitationNote.style.fontSize = '11px';
+    limitationNote.style.color = '#383d41';
+    limitationNote.textContent = 'PowerPoint provides limited document property access through Office.js APIs. Basic document information like file name and URL may still be available above.';
+    container.appendChild(limitationNote);
   });
 }
 
@@ -689,7 +753,7 @@ function loadAddinsInfo() {
     
     // Version from manifest - Office.js doesn't provide runtime access to manifest version
     // Source: Microsoft documentation shows no Office.context.manifest API exists
-    const ADDIN_VERSION = '1.0.22'; // Keep in sync with config/manifest.xml
+    const ADDIN_VERSION = '1.0.23'; // Keep in sync with config/manifest.xml
     container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     

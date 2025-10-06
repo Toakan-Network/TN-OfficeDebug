@@ -510,15 +510,15 @@ function loadPowerPointDocumentInfo(container) {
     powerPointRunAvailable: typeof PowerPoint !== 'undefined' && typeof PowerPoint.run === 'function'
   });
   
-  // Add basic info first to show we're at least getting called
+  // Add basic info first - this always works
   container.appendChild(createInfoRow('Host Application', 'Microsoft PowerPoint'));
   container.appendChild(createInfoRow('Document Type', 'PowerPoint Presentation'));
   
-  // Always try basic Office.context first as fallback
+  // Use only reliable Office.context APIs - avoid PowerPoint.run due to GeneralException issues
   try {
-    window.logDebug('Loading basic document info from Office.context');
+    window.logDebug('Loading document info using Office.context APIs only');
     
-    // Document URL and basic info
+    // Document URL and basic info - most reliable source
     if (Office.context.document && Office.context.document.url) {
       const url = Office.context.document.url;
       const fileName = url.split('/').pop().split('\\').pop();
@@ -526,195 +526,105 @@ function loadPowerPointDocumentInfo(container) {
       container.appendChild(createInfoRow('Document URL', url));
     }
     
-    // Document mode
+    // Document mode - available in basic Office APIs
     if (Office.context.document && Office.context.document.mode !== undefined) {
       const mode = Office.context.document.mode === Office.DocumentMode.ReadOnly ? 'Read-Only' : 'Read-Write';
       container.appendChild(createInfoRow('Document Mode', mode));
     }
     
-    window.logDebug('Basic document info loaded successfully');
-    
-  } catch (basicError) {
-    window.logDebug('Failed to load basic document info', { error: basicError.message });
-  }
-  
-  // Check if PowerPoint.run is available at all
-  if (typeof PowerPoint === 'undefined' || typeof PowerPoint.run !== 'function') {
-    const errorNote = document.createElement('div');
-    errorNote.style.marginTop = '20px';
-    errorNote.style.padding = '10px';
-    errorNote.style.backgroundColor = '#f8d7da';
-    errorNote.style.border = '1px solid #f5c6cb';
-    errorNote.style.borderRadius = '4px';
-    errorNote.style.fontSize = '11px';
-    errorNote.style.color = '#721c24';
-    errorNote.textContent = 'PowerPoint JavaScript API not available. This may indicate the add-in is not running in PowerPoint or the PowerPoint API library is not loaded.';
-    container.appendChild(errorNote);
-    return;
-  }
-  
-  // Check if PowerPoint API 1.7 is available
-  const api17Available = Office.context.requirements && Office.context.requirements.isSetSupported('PowerPointApi', '1.7');
-  window.logDebug('PowerPoint API 1.7 check', { available: api17Available });
-  
-  if (!api17Available) {
-    // Fallback for older PowerPoint versions - show note but don't return
-    const apiNote = document.createElement('div');
-    apiNote.style.marginTop = '20px';
-    apiNote.style.padding = '10px';
-    apiNote.style.backgroundColor = '#fff3cd';
-    apiNote.style.border = '1px solid #ffeaa7';
-    apiNote.style.borderRadius = '4px';
-    apiNote.style.fontSize = '11px';
-    apiNote.style.color = '#856404';
-    apiNote.textContent = 'Note: Document properties require PowerPoint API 1.7+. This version of PowerPoint has limited document property support.';
-    container.appendChild(apiNote);
-    
-    // Try to load custom properties using basic Office APIs
-    try {
-      if (Office.context.document && Office.context.document.customProperties) {
-        window.logDebug('Attempting to load custom properties via Office.context');
-        Office.context.document.customProperties.getAsync((result) => {
-          if (result.status === Office.AsyncResultStatus.Succeeded) {
-            window.logDebug('Custom properties loaded successfully', result.value);
-            if (result.value && result.value.length > 0) {
-              const separator = document.createElement('div');
-              separator.style.marginTop = '20px';
-              separator.style.marginBottom = '15px';
-              separator.style.fontWeight = 'bold';
-              separator.style.borderTop = '1px solid #ccc';
-              separator.style.paddingTop = '10px';
-              separator.textContent = 'Custom Properties';
-              container.appendChild(separator);
-              
-              result.value.forEach(prop => {
-                const row = createInfoRow(prop.name, prop.value);
-                row.style.borderLeft = '4px solid #28a745';
-                container.appendChild(row);
-              });
-            }
-          } else {
-            window.logDebug('Failed to load custom properties', result.error);
-          }
-        });
-      }
-    } catch (customError) {
-      window.logDebug('Error loading custom properties via Office.context', { error: customError.message });
+    // Try to get any additional document settings
+    if (Office.context.document && Office.context.document.settings) {
+      window.logDebug('Document settings available');
+      // Settings API is available but may not contain useful document properties
     }
-    return;
-  }
-
-  // Try PowerPoint.run only if API 1.7 is available
-  window.logDebug('Attempting PowerPoint.run');
-  PowerPoint.run(async (context) => {
-    try {
-      window.logDebug('Inside PowerPoint.run context');
-      const presentation = context.presentation;
-      window.logDebug('Got presentation object', { presentation: !!presentation });
+    
+    // Try basic custom properties via Office.context - this is more reliable than PowerPoint.run
+    if (Office.context.document && Office.context.document.customProperties) {
+      window.logDebug('Attempting custom properties via Office.context');
       
-      const properties = presentation.properties;
-      window.logDebug('Got properties object', { properties: !!properties });
-      
-      // Load only properties supported in PowerPoint API 1.7
-      properties.load(['title', 'subject', 'author', 'manager', 'revisionNumber']);
-      window.logDebug('Properties load requested');
-      
-      // Try to load custom properties
-      let customProperties = null;
-      try {
-        customProperties = properties.custom;
-        customProperties.load('items');
-        window.logDebug('Custom properties load requested');
-      } catch (customError) {
-        window.logDebug('Custom properties not available', { error: customError.message });
-      }
-      
-      window.logDebug('About to sync');
-      await context.sync();
-      window.logDebug('Sync completed successfully');
-      
-      // Built-in Document Properties
-      container.appendChild(createInfoRow('Title', properties.title || 'Not set'));
-      container.appendChild(createInfoRow('Subject', properties.subject || 'Not set'));
-      container.appendChild(createInfoRow('Author', properties.author || 'Not set'));
-      container.appendChild(createInfoRow('Manager', properties.manager || 'Not set'));
-      
-      if (properties.revisionNumber !== undefined) {
-        container.appendChild(createInfoRow('Revision Number', properties.revisionNumber.toString()));
-      }
-      
-      // Custom Properties Section
-      if (customProperties) {
-        const separator = document.createElement('div');
-        separator.style.marginTop = '20px';
-        separator.style.marginBottom = '15px';
-        separator.style.fontWeight = 'bold';
-        separator.style.borderTop = '1px solid #ccc';
-        separator.style.paddingTop = '10px';
-        separator.textContent = 'Custom Properties';
-        container.appendChild(separator);
-        
-        if (customProperties.items && customProperties.items.length > 0) {
-          customProperties.items.forEach((customProp, index) => {
-            try {
-              const propRow = createInfoRow(customProp.key, customProp.value);
-              propRow.style.borderLeft = '4px solid #28a745';
-              container.appendChild(propRow);
-            } catch (propError) {
-              window.logDebug('Error displaying custom property', { 
-                index: index, 
-                error: propError.message 
-              });
-            }
+      Office.context.document.customProperties.getAsync((result) => {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          window.logDebug('Custom properties loaded via Office.context', { 
+            count: result.value ? result.value.length : 0,
+            properties: result.value
           });
           
-          container.appendChild(createInfoRow('Total Custom Properties', customProperties.items.length));
+          if (result.value && result.value.length > 0) {
+            // Add separator for custom properties
+            const separator = document.createElement('div');
+            separator.style.marginTop = '20px';
+            separator.style.marginBottom = '15px';
+            separator.style.fontWeight = 'bold';
+            separator.style.borderTop = '1px solid #ccc';
+            separator.style.paddingTop = '10px';
+            separator.textContent = 'Custom Properties';
+            container.appendChild(separator);
+            
+            // Display each custom property
+            result.value.forEach(prop => {
+              const row = createInfoRow(prop.name, prop.value);
+              row.style.borderLeft = '4px solid #28a745';
+              container.appendChild(row);
+            });
+            
+            container.appendChild(createInfoRow('Total Custom Properties', result.value.length));
+          } else {
+            container.appendChild(createInfoRow('Custom Properties', 'None found'));
+          }
         } else {
-          const noPropsRow = createInfoRow('Custom Properties', 'None found in this presentation');
-          container.appendChild(noPropsRow);
+          window.logDebug('Custom properties loading failed', { 
+            error: result.error ? result.error.message : 'Unknown error',
+            status: result.status
+          });
+          container.appendChild(createInfoRow('Custom Properties', 'Unable to load (API limitation)'));
         }
-      }
-      
-      window.logDebug('PowerPoint document info loading completed successfully');
-      
-    } catch (error) {
-      window.logDebug('Error in PowerPoint.run', { 
-        error: error.message, 
-        stack: error.stack,
-        name: error.name 
       });
-      
-      // Provide more specific error information
-      if (error.message && error.message.includes('PowerPointApi')) {
-        displaySafeError(container, `PowerPoint API error: ${error.message}. This may indicate an unsupported PowerPoint version.`);
-      } else if (error.message && error.message.includes('properties')) {
-        displaySafeError(container, `Properties API error: ${error.message}. Some document properties may not be available in this PowerPoint version.`);
-      } else {
-        displaySafeError(container, `Error loading PowerPoint document information: ${error.message}`);
-      }
+    } else {
+      window.logDebug('Office.context.document.customProperties not available');
+      container.appendChild(createInfoRow('Custom Properties', 'Not supported in this PowerPoint version'));
     }
-  }).catch((runError) => {
-    window.logDebug('PowerPoint.run failed', { 
-      error: runError.message, 
-      stack: runError.stack,
-      name: runError.name 
+    
+    // Add informational note about PowerPoint API limitations
+    const infoNote = document.createElement('div');
+    infoNote.style.marginTop = '20px';
+    infoNote.style.padding = '12px';
+    infoNote.style.backgroundColor = '#d1ecf1';
+    infoNote.style.border = '1px solid #bee5eb';
+    infoNote.style.borderRadius = '4px';
+    infoNote.style.fontSize = '12px';
+    infoNote.style.color = '#0c5460';
+    infoNote.innerHTML = '<strong>PowerPoint API Information:</strong><br>' +
+                         'PowerPoint provides limited document property access compared to Word and Excel. ' +
+                         'Advanced features like detailed document statistics, content analysis, and ' +
+                         'comprehensive metadata are not available through PowerPoint\'s Office.js APIs.';
+    container.appendChild(infoNote);
+    
+    // Add a note about successful basic info loading
+    container.appendChild(createInfoRow('Status', 'Basic document information loaded successfully'));
+    
+    window.logDebug('PowerPoint document info loading completed using basic APIs');
+    
+  } catch (error) {
+    window.logDebug('Error loading PowerPoint document info via Office.context', { 
+      error: error.message,
+      stack: error.stack,
+      name: error.name 
     });
     
-    // If PowerPoint.run fails with GeneralException, provide helpful fallback message
-    displaySafeError(container, `PowerPoint.run failed: ${runError.message || 'GeneralException'}. PowerPoint has limited API support compared to Word and Excel.`);
+    displaySafeError(container, `Error accessing document information: ${error.message}`);
     
-    // Add informational note about PowerPoint limitations
-    const limitationNote = document.createElement('div');
-    limitationNote.style.marginTop = '15px';
-    limitationNote.style.padding = '10px';
-    limitationNote.style.backgroundColor = '#e2e3e5';
-    limitationNote.style.border = '1px solid #d6d8db';
-    limitationNote.style.borderRadius = '4px';
-    limitationNote.style.fontSize = '11px';
-    limitationNote.style.color = '#383d41';
-    limitationNote.textContent = 'PowerPoint provides limited document property access through Office.js APIs. Basic document information like file name and URL may still be available above.';
-    container.appendChild(limitationNote);
-  });
+    // Still add a basic status message
+    const fallbackNote = document.createElement('div');
+    fallbackNote.style.marginTop = '15px';
+    fallbackNote.style.padding = '10px';
+    fallbackNote.style.backgroundColor = '#f8d7da';
+    fallbackNote.style.border = '1px solid #f5c6cb';
+    fallbackNote.style.borderRadius = '4px';
+    fallbackNote.style.fontSize = '11px';
+    fallbackNote.style.color = '#721c24';
+    fallbackNote.textContent = 'PowerPoint document information could not be loaded due to API restrictions.';
+    container.appendChild(fallbackNote);
+  }
 }
 
 function loadGenericDocumentInfo(container) {
@@ -753,7 +663,7 @@ function loadAddinsInfo() {
     
     // Version from manifest - Office.js doesn't provide runtime access to manifest version
     // Source: Microsoft documentation shows no Office.context.manifest API exists
-    const ADDIN_VERSION = '1.0.23'; // Keep in sync with config/manifest.xml
+    const ADDIN_VERSION = '1.0.24'; // Keep in sync with config/manifest.xml
     container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     

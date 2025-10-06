@@ -205,18 +205,33 @@ function loadDocumentInfo() {
   container.innerHTML = '';
 
   try {
+    // Debug host detection
+    window.logDebug('loadDocumentInfo called', {
+      host: Office.context.host,
+      hostTypeWord: Office.HostType.Word,
+      hostTypeExcel: Office.HostType.Excel,
+      hostTypePowerPoint: Office.HostType.PowerPoint,
+      isWord: Office.context.host === Office.HostType.Word,
+      isExcel: Office.context.host === Office.HostType.Excel,
+      isPowerPoint: Office.context.host === Office.HostType.PowerPoint
+    });
+    
     // Check which Office host we're in
     if (Office.context.host === Office.HostType.Word) {
       // Word-specific document info
+      window.logDebug('Calling loadWordDocumentInfo');
       loadWordDocumentInfo(container);
     } else if (Office.context.host === Office.HostType.Excel) {
       // Excel-specific document info
+      window.logDebug('Calling loadExcelDocumentInfo');
       loadExcelDocumentInfo(container);
     } else if (Office.context.host === Office.HostType.PowerPoint) {
       // PowerPoint-specific document info
+      window.logDebug('Calling loadPowerPointDocumentInfo');
       loadPowerPointDocumentInfo(container);
     } else {
       // Generic document info for other hosts
+      window.logDebug('Calling loadGenericDocumentInfo for unknown host');
       loadGenericDocumentInfo(container);
     }
   } catch (error) {
@@ -478,16 +493,45 @@ function loadExcelDocumentInfo(container) {
 }
 
 function loadPowerPointDocumentInfo(container) {
-  // First check if PowerPoint API 1.7 is available
-  if (!Office.context.requirements || !Office.context.requirements.isSetSupported('PowerPointApi', '1.7')) {
+  window.logDebug('PowerPoint document info loading started', {
+    host: Office.context.host,
+    hostType: Office.HostType.PowerPoint,
+    hostMatch: Office.context.host === Office.HostType.PowerPoint,
+    requirementsAvailable: !!Office.context.requirements,
+    powerPointRunAvailable: typeof PowerPoint !== 'undefined' && typeof PowerPoint.run === 'function'
+  });
+  
+  // Add basic info first to show we're at least getting called
+  container.appendChild(createInfoRow('Host Application', 'Microsoft PowerPoint'));
+  container.appendChild(createInfoRow('Document Type', 'PowerPoint Presentation'));
+  container.appendChild(createInfoRow('Debug', 'PowerPoint function called successfully'));
+  
+  // Document URL
+  if (Office.context.document && Office.context.document.url) {
+    container.appendChild(createInfoRow('Document URL', Office.context.document.url));
+  }
+  
+  // Check if PowerPoint.run is available at all
+  if (typeof PowerPoint === 'undefined' || typeof PowerPoint.run !== 'function') {
+    const errorNote = document.createElement('div');
+    errorNote.style.marginTop = '20px';
+    errorNote.style.padding = '10px';
+    errorNote.style.backgroundColor = '#f8d7da';
+    errorNote.style.border = '1px solid #f5c6cb';
+    errorNote.style.borderRadius = '4px';
+    errorNote.style.fontSize = '11px';
+    errorNote.style.color = '#721c24';
+    errorNote.textContent = 'PowerPoint JavaScript API not available. This may indicate the add-in is not running in PowerPoint or the PowerPoint API library is not loaded.';
+    container.appendChild(errorNote);
+    return;
+  }
+  
+  // Check if PowerPoint API 1.7 is available
+  const api17Available = Office.context.requirements && Office.context.requirements.isSetSupported('PowerPointApi', '1.7');
+  window.logDebug('PowerPoint API 1.7 check', { available: api17Available });
+  
+  if (!api17Available) {
     // Fallback for older PowerPoint versions
-    container.appendChild(createInfoRow('Host Application', 'Microsoft PowerPoint'));
-    container.appendChild(createInfoRow('Document Type', 'PowerPoint Presentation'));
-    
-    if (Office.context.document && Office.context.document.url) {
-      container.appendChild(createInfoRow('Document URL', Office.context.document.url));
-    }
-    
     const apiNote = document.createElement('div');
     apiNote.style.marginTop = '20px';
     apiNote.style.padding = '10px';
@@ -501,36 +545,36 @@ function loadPowerPointDocumentInfo(container) {
     return;
   }
 
+  // Try PowerPoint.run
+  window.logDebug('Attempting PowerPoint.run');
   PowerPoint.run(async (context) => {
     try {
+      window.logDebug('Inside PowerPoint.run context');
       const presentation = context.presentation;
+      window.logDebug('Got presentation object', { presentation: !!presentation });
+      
       const properties = presentation.properties;
+      window.logDebug('Got properties object', { properties: !!properties });
       
       // Load only properties supported in PowerPoint API 1.7
-      // According to documentation: title, subject, author, manager, revisionNumber
       properties.load(['title', 'subject', 'author', 'manager', 'revisionNumber']);
+      window.logDebug('Properties load requested');
       
-      // Try to load custom properties (PowerPoint API 1.7+)
+      // Try to load custom properties
       let customProperties = null;
       try {
         customProperties = properties.custom;
         customProperties.load('items');
+        window.logDebug('Custom properties load requested');
       } catch (customError) {
         window.logDebug('Custom properties not available', { error: customError.message });
       }
       
+      window.logDebug('About to sync');
       await context.sync();
+      window.logDebug('Sync completed successfully');
       
-      // Host application info
-      container.appendChild(createInfoRow('Host Application', 'Microsoft PowerPoint'));
-      container.appendChild(createInfoRow('Document Type', 'PowerPoint Presentation'));
-      
-      // Document URL
-      if (Office.context.document && Office.context.document.url) {
-        container.appendChild(createInfoRow('Document URL', Office.context.document.url));
-      }
-      
-      // Built-in Document Properties (only those supported by PowerPoint API 1.7)
+      // Built-in Document Properties
       container.appendChild(createInfoRow('Title', properties.title || 'Not set'));
       container.appendChild(createInfoRow('Subject', properties.subject || 'Not set'));
       container.appendChild(createInfoRow('Author', properties.author || 'Not set'));
@@ -555,7 +599,6 @@ function loadPowerPointDocumentInfo(container) {
           customProperties.items.forEach((customProp, index) => {
             try {
               const propRow = createInfoRow(customProp.key, customProp.value);
-              // Different border color for custom properties (green)
               propRow.style.borderLeft = '4px solid #28a745';
               container.appendChild(propRow);
             } catch (propError) {
@@ -571,23 +614,16 @@ function loadPowerPointDocumentInfo(container) {
           const noPropsRow = createInfoRow('Custom Properties', 'None found in this presentation');
           container.appendChild(noPropsRow);
         }
-      } else {
-        // Custom properties not available
-        const separator = document.createElement('div');
-        separator.style.marginTop = '20px';
-        separator.style.marginBottom = '15px';
-        separator.style.fontWeight = 'bold';
-        separator.style.borderTop = '1px solid #ccc';
-        separator.style.paddingTop = '10px';
-        separator.textContent = 'Custom Properties';
-        container.appendChild(separator);
-        
-        const noPropsRow = createInfoRow('Custom Properties', 'API not available in this PowerPoint version');
-        container.appendChild(noPropsRow);
       }
       
+      window.logDebug('PowerPoint document info loading completed successfully');
+      
     } catch (error) {
-      window.logDebug('Error in loadPowerPointDocumentInfo', { error: error.message });
+      window.logDebug('Error in PowerPoint.run', { 
+        error: error.message, 
+        stack: error.stack,
+        name: error.name 
+      });
       
       // Provide more specific error information
       if (error.message && error.message.includes('PowerPointApi')) {
@@ -598,6 +634,13 @@ function loadPowerPointDocumentInfo(container) {
         displaySafeError(container, `Error loading PowerPoint document information: ${error.message}`);
       }
     }
+  }).catch((runError) => {
+    window.logDebug('PowerPoint.run failed', { 
+      error: runError.message, 
+      stack: runError.stack,
+      name: runError.name 
+    });
+    displaySafeError(container, `PowerPoint.run failed: ${runError.message}`);
   });
 }
 
@@ -637,7 +680,7 @@ function loadAddinsInfo() {
     
     // Version from manifest - Office.js doesn't provide runtime access to manifest version
     // Source: Microsoft documentation shows no Office.context.manifest API exists
-    const ADDIN_VERSION = '1.0.20'; // Keep in sync with config/manifest.xml
+    const ADDIN_VERSION = '1.0.21'; // Keep in sync with config/manifest.xml
     container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     

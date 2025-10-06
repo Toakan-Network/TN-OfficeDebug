@@ -1,5 +1,14 @@
 /* global Office */
 
+// Debug logging function
+window.logDebug = function(message, data = null) {
+  if (data) {
+    console.log(`[DEBUG] ${message}:`, data);
+  } else {
+    console.log(`[DEBUG] ${message}`);
+  }
+};
+
 Office.onReady((info) => {
   try {
     // Support Word, Excel, and PowerPoint
@@ -680,7 +689,7 @@ function loadAddinsInfo() {
     
     // Version from manifest - Office.js doesn't provide runtime access to manifest version
     // Source: Microsoft documentation shows no Office.context.manifest API exists
-    const ADDIN_VERSION = '1.0.21'; // Keep in sync with config/manifest.xml
+    const ADDIN_VERSION = '1.0.22'; // Keep in sync with config/manifest.xml
     container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     

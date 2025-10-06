@@ -73,6 +73,13 @@ function createInfoRow(label, value, isCode = false) {
   return container;
 }
 
+// Security helper function to safely display errors without XSS
+function displaySafeError(container, errorMessage) {
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'error';
+  errorDiv.textContent = errorMessage; // Use textContent to prevent XSS
+  container.appendChild(errorDiv);
+}
 function loadOfficeInfo() {
   const container = document.getElementById('office-info');
   
@@ -183,7 +190,7 @@ function loadOfficeInfo() {
     }
     
   } catch (error) {
-    container.innerHTML = `<div class="error">Error loading Office info: ${error.message}</div>`;
+    displaySafeError(container, `Error loading Office info: ${error.message}`);
   }
 }
 
@@ -214,7 +221,7 @@ function loadDocumentInfo() {
     }
   } catch (error) {
     console.error('ERROR in loadDocumentInfo', error);
-    container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+    displaySafeError(container, `Error: ${error.message}`);
   }
 }
 
@@ -389,10 +396,10 @@ function loadWordDocumentInfo(container) {
         }
         
       } catch (error) {
-        container.innerHTML = `<div class="error">Error loading document info: ${error.message}</div>`;
+        displaySafeError(container, `Error loading document info: ${error.message}`);
       }
     }).catch((error) => {
-      container.innerHTML = `<div class="error">Word.run Error: ${error.message}</div>`;
+      displaySafeError(container, `Word.run Error: ${error.message}`);
     });
 }
 
@@ -465,7 +472,7 @@ function loadExcelDocumentInfo(container) {
       
     } catch (error) {
       window.logDebug('Error in loadExcelDocumentInfo', { error: error.message });
-      container.innerHTML = `<div class="error">Error loading Excel document information: ${error.message}</div>`;
+      displaySafeError(container, `Error loading Excel document information: ${error.message}`);
     }
   });
 }
@@ -542,9 +549,9 @@ function loadPowerPointDocumentInfo(container) {
       
       // Check if it's an API version issue
       if (error.message && error.message.includes('properties')) {
-        container.innerHTML = `<div class="error">Custom properties require PowerPoint API 1.7+. Error: ${error.message}</div>`;
+        displaySafeError(container, `Custom properties require PowerPoint API 1.7+. Error: ${error.message}`);
       } else {
-        container.innerHTML = `<div class="error">Error loading PowerPoint document information: ${error.message}</div>`;
+        displaySafeError(container, `Error loading PowerPoint document information: ${error.message}`);
       }
     }
   });
@@ -586,7 +593,7 @@ function loadAddinsInfo() {
     
     // Version from manifest - Office.js doesn't provide runtime access to manifest version
     // Source: Microsoft documentation shows no Office.context.manifest API exists
-    const ADDIN_VERSION = '1.0.18'; // Keep in sync with config/manifest.xml
+    const ADDIN_VERSION = '1.0.19'; // Keep in sync with config/manifest.xml
     container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     
@@ -761,11 +768,17 @@ function loadAddinsInfo() {
     note.style.borderRadius = '4px';
     note.style.fontSize = '11px';
     note.style.color = '#856404';
-    note.innerHTML = '<strong>Security Note:</strong> Office Add-ins run in a sandboxed environment and cannot directly enumerate other installed add-ins for security reasons. This tool shows information about the current add-in and Office environment only.';
+    
+    // Create security note content safely
+    const strongText = document.createElement('strong');
+    strongText.textContent = 'Security Note:';
+    note.appendChild(strongText);
+    note.appendChild(document.createTextNode(' Office Add-ins run in a sandboxed environment and cannot directly enumerate other installed add-ins for security reasons. This tool shows information about the current add-in and Office environment only.'));
+    
     container.appendChild(note);
     
   } catch (error) {
-    container.innerHTML = `<div class="error">Error loading add-ins info: ${error.message}</div>`;
+    displaySafeError(container, `Error loading add-ins info: ${error.message}`);
   }
 }
 
@@ -855,7 +868,7 @@ function loadSystemInfo() {
     container.appendChild(createInfoRow('Timezone Offset', (new Date().getTimezoneOffset() / 60) + ' hours'));
     
   } catch (error) {
-    container.innerHTML = `<div class="error">Error loading system info: ${error.message}</div>`;
+    displaySafeError(container, `Error loading system info: ${error.message}`);
   }
 }
 
@@ -912,7 +925,7 @@ function loadContextInfo() {
     }
     
   } catch (error) {
-    container.innerHTML = `<div class="error">Error loading context info: ${error.message}</div>`;
+    displaySafeError(container, `Error loading context info: ${error.message}`);
   }
 }
 

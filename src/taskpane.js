@@ -478,17 +478,46 @@ function loadExcelDocumentInfo(container) {
 }
 
 function loadPowerPointDocumentInfo(container) {
+  // First check if PowerPoint API 1.7 is available
+  if (!Office.context.requirements || !Office.context.requirements.isSetSupported('PowerPointApi', '1.7')) {
+    // Fallback for older PowerPoint versions
+    container.appendChild(createInfoRow('Host Application', 'Microsoft PowerPoint'));
+    container.appendChild(createInfoRow('Document Type', 'PowerPoint Presentation'));
+    
+    if (Office.context.document && Office.context.document.url) {
+      container.appendChild(createInfoRow('Document URL', Office.context.document.url));
+    }
+    
+    const apiNote = document.createElement('div');
+    apiNote.style.marginTop = '20px';
+    apiNote.style.padding = '10px';
+    apiNote.style.backgroundColor = '#fff3cd';
+    apiNote.style.border = '1px solid #ffeaa7';
+    apiNote.style.borderRadius = '4px';
+    apiNote.style.fontSize = '11px';
+    apiNote.style.color = '#856404';
+    apiNote.textContent = 'Note: Document properties require PowerPoint API 1.7+. This version of PowerPoint does not support detailed document property access.';
+    container.appendChild(apiNote);
+    return;
+  }
+
   PowerPoint.run(async (context) => {
     try {
       const presentation = context.presentation;
       const properties = presentation.properties;
       
-      // Load built-in properties
-      properties.load(['title', 'subject', 'author', 'keywords', 'comments', 'creationDate', 'lastAuthor']);
+      // Load only properties supported in PowerPoint API 1.7
+      // According to documentation: title, subject, author, manager, revisionNumber
+      properties.load(['title', 'subject', 'author', 'manager', 'revisionNumber']);
       
-      // Load custom properties (PowerPoint API 1.7+)
-      const customProperties = properties.custom;
-      customProperties.load('items');
+      // Try to load custom properties (PowerPoint API 1.7+)
+      let customProperties = null;
+      try {
+        customProperties = properties.custom;
+        customProperties.load('items');
+      } catch (customError) {
+        window.logDebug('Custom properties not available', { error: customError.message });
+      }
       
       await context.sync();
       
@@ -501,55 +530,70 @@ function loadPowerPointDocumentInfo(container) {
         container.appendChild(createInfoRow('Document URL', Office.context.document.url));
       }
       
-      // Built-in Document Properties
+      // Built-in Document Properties (only those supported by PowerPoint API 1.7)
       container.appendChild(createInfoRow('Title', properties.title || 'Not set'));
       container.appendChild(createInfoRow('Subject', properties.subject || 'Not set'));
       container.appendChild(createInfoRow('Author', properties.author || 'Not set'));
-      container.appendChild(createInfoRow('Keywords', properties.keywords || 'Not set'));
-      container.appendChild(createInfoRow('Comments', properties.comments || 'Not set'));
-      container.appendChild(createInfoRow('Last Author', properties.lastAuthor || 'Not set'));
+      container.appendChild(createInfoRow('Manager', properties.manager || 'Not set'));
       
-      if (properties.creationDate) {
-        container.appendChild(createInfoRow('Creation Date', new Date(properties.creationDate).toLocaleString()));
+      if (properties.revisionNumber !== undefined) {
+        container.appendChild(createInfoRow('Revision Number', properties.revisionNumber.toString()));
       }
       
       // Custom Properties Section
-      const separator = document.createElement('div');
-      separator.style.marginTop = '20px';
-      separator.style.marginBottom = '15px';
-      separator.style.fontWeight = 'bold';
-      separator.style.borderTop = '1px solid #ccc';
-      separator.style.paddingTop = '10px';
-      separator.textContent = 'Custom Properties';
-      container.appendChild(separator);
-      
-      if (customProperties.items && customProperties.items.length > 0) {
-        customProperties.items.forEach((customProp, index) => {
-          try {
-            const propRow = createInfoRow(customProp.key, customProp.value);
-            // Different border color for custom properties (green)
-            propRow.style.borderLeft = '4px solid #28a745';
-            container.appendChild(propRow);
-          } catch (propError) {
-            window.logDebug('Error displaying custom property', { 
-              index: index, 
-              error: propError.message 
-            });
-          }
-        });
+      if (customProperties) {
+        const separator = document.createElement('div');
+        separator.style.marginTop = '20px';
+        separator.style.marginBottom = '15px';
+        separator.style.fontWeight = 'bold';
+        separator.style.borderTop = '1px solid #ccc';
+        separator.style.paddingTop = '10px';
+        separator.textContent = 'Custom Properties';
+        container.appendChild(separator);
         
-        container.appendChild(createInfoRow('Total Custom Properties', customProperties.items.length));
+        if (customProperties.items && customProperties.items.length > 0) {
+          customProperties.items.forEach((customProp, index) => {
+            try {
+              const propRow = createInfoRow(customProp.key, customProp.value);
+              // Different border color for custom properties (green)
+              propRow.style.borderLeft = '4px solid #28a745';
+              container.appendChild(propRow);
+            } catch (propError) {
+              window.logDebug('Error displaying custom property', { 
+                index: index, 
+                error: propError.message 
+              });
+            }
+          });
+          
+          container.appendChild(createInfoRow('Total Custom Properties', customProperties.items.length));
+        } else {
+          const noPropsRow = createInfoRow('Custom Properties', 'None found in this presentation');
+          container.appendChild(noPropsRow);
+        }
       } else {
-        const noPropsRow = createInfoRow('Custom Properties', 'None found in this presentation');
+        // Custom properties not available
+        const separator = document.createElement('div');
+        separator.style.marginTop = '20px';
+        separator.style.marginBottom = '15px';
+        separator.style.fontWeight = 'bold';
+        separator.style.borderTop = '1px solid #ccc';
+        separator.style.paddingTop = '10px';
+        separator.textContent = 'Custom Properties';
+        container.appendChild(separator);
+        
+        const noPropsRow = createInfoRow('Custom Properties', 'API not available in this PowerPoint version');
         container.appendChild(noPropsRow);
       }
       
     } catch (error) {
       window.logDebug('Error in loadPowerPointDocumentInfo', { error: error.message });
       
-      // Check if it's an API version issue
-      if (error.message && error.message.includes('properties')) {
-        displaySafeError(container, `Custom properties require PowerPoint API 1.7+. Error: ${error.message}`);
+      // Provide more specific error information
+      if (error.message && error.message.includes('PowerPointApi')) {
+        displaySafeError(container, `PowerPoint API error: ${error.message}. This may indicate an unsupported PowerPoint version.`);
+      } else if (error.message && error.message.includes('properties')) {
+        displaySafeError(container, `Properties API error: ${error.message}. Some document properties may not be available in this PowerPoint version.`);
       } else {
         displaySafeError(container, `Error loading PowerPoint document information: ${error.message}`);
       }
@@ -593,7 +637,7 @@ function loadAddinsInfo() {
     
     // Version from manifest - Office.js doesn't provide runtime access to manifest version
     // Source: Microsoft documentation shows no Office.context.manifest API exists
-    const ADDIN_VERSION = '1.0.19'; // Keep in sync with config/manifest.xml
+    const ADDIN_VERSION = '1.0.20'; // Keep in sync with config/manifest.xml
     container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     

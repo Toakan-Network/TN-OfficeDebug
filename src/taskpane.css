@@ -61,7 +61,7 @@ header h1 {
 }
 
 .content {
-    padding: 8px;
+    padding: 12px;
     flex: 1;
     overflow: hidden;
     display: flex;

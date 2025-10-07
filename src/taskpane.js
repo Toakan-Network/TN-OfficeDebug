@@ -664,7 +664,7 @@ function loadAddinsInfo() {
     
     // Version from manifest - Office.js doesn't provide runtime access to manifest version
     // Source: Microsoft documentation shows no Office.context.manifest API exists
-    const ADDIN_VERSION = '1.0.27'; // Keep in sync with config/manifest.xml
+    const ADDIN_VERSION = '1.0.28'; // Keep in sync with config/manifest.xml
     container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     
@@ -1479,7 +1479,7 @@ function addIManageActions(container, properties) {
   container.appendChild(placeholder);
 }
 
-// NetDocuments API Functions (POC Implementation)
+// NetDocuments API Functions (Real REST API Implementation)
 async function testNetDocumentsAPI(properties) {
   window.logDebug('Testing NetDocuments API connection', properties);
   
@@ -1487,40 +1487,91 @@ async function testNetDocumentsAPI(properties) {
   resultsArea.innerHTML = '<div style="color: #666; font-style: italic;">Testing API connection...</div>';
   
   try {
-    // This is a POC - in production you would need proper authentication
-    // For now, we'll simulate the API call structure
+    // NetDocuments REST API Configuration
+    const config = getNetDocumentsConfig();
     
-    const testResult = {
-      status: 'success',
-      message: 'POC: NetDocuments API structure ready',
-      documentId: properties.ndDocumentId,
-      timestamp: new Date().toISOString(),
-      note: 'This is a proof-of-concept. Actual API calls require authentication and endpoints.'
-    };
+    if (!config.isConfigured) {
+      showNetDocumentsConfigPrompt(resultsArea, properties);
+      return;
+    }
+    
+    // Test API connectivity with a simple repository list call
+    const testEndpoint = `${config.baseUrl}/v2/repository`;
+    
+    window.logDebug('Testing NetDocuments API endpoint', { endpoint: testEndpoint });
+    
+    const response = await fetch(testEndpoint, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${config.accessToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    
+    window.logDebug('NetDocuments API response received', { 
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    });
     
     resultsArea.innerHTML = '';
-    resultsArea.appendChild(createInfoRow('API Test Status', testResult.status));
-    resultsArea.appendChild(createInfoRow('Message', testResult.message));
-    resultsArea.appendChild(createInfoRow('Document ID', testResult.documentId));
-    resultsArea.appendChild(createInfoRow('Test Time', testResult.timestamp));
     
-    const note = document.createElement('div');
-    note.style.marginTop = '10px';
-    note.style.padding = '8px';
-    note.style.backgroundColor = '#fff3cd';
-    note.style.border = '1px solid #ffeaa7';
-    note.style.borderRadius = '4px';
-    note.style.fontSize = '11px';
-    note.style.color = '#856404';
-    note.textContent = testResult.note;
-    resultsArea.appendChild(note);
-    
-    window.logDebug('NetDocuments API test completed', testResult);
+    if (response.ok) {
+      const data = await response.json();
+      window.logDebug('NetDocuments API test successful', data);
+      
+      resultsArea.appendChild(createInfoRow('API Test Status', 'Success'));
+      resultsArea.appendChild(createInfoRow('Response Status', `${response.status} ${response.statusText}`));
+      resultsArea.appendChild(createInfoRow('Base URL', config.baseUrl));
+      resultsArea.appendChild(createInfoRow('Test Endpoint', '/v2/repository'));
+      resultsArea.appendChild(createInfoRow('Repositories Found', data.length || 'N/A'));
+      resultsArea.appendChild(createInfoRow('Test Time', new Date().toISOString()));
+      
+      const successNote = document.createElement('div');
+      successNote.style.marginTop = '10px';
+      successNote.style.padding = '8px';
+      successNote.style.backgroundColor = '#d4edda';
+      successNote.style.border = '1px solid #c3e6cb';
+      successNote.style.borderRadius = '4px';
+      successNote.style.fontSize = '11px';
+      successNote.style.color = '#155724';
+      successNote.textContent = 'NetDocuments API connection successful! You can now retrieve document information.';
+      resultsArea.appendChild(successNote);
+      
+    } else {
+      window.logDebug('NetDocuments API test failed', { 
+        status: response.status,
+        statusText: response.statusText
+      });
+      
+      const errorText = await response.text();
+      window.logDebug('NetDocuments API error response', errorText);
+      
+      resultsArea.appendChild(createInfoRow('API Test Status', 'Failed'));
+      resultsArea.appendChild(createInfoRow('Response Status', `${response.status} ${response.statusText}`));
+      resultsArea.appendChild(createInfoRow('Error Details', errorText || 'No error details available'));
+      
+      displayNetDocumentsError(resultsArea, response.status, errorText);
+    }
     
   } catch (error) {
-    window.logDebug('NetDocuments API test failed', { error: error.message });
+    window.logDebug('NetDocuments API test failed with exception', { error: error.message });
     resultsArea.innerHTML = '';
     displaySafeError(resultsArea, `API test failed: ${error.message}`);
+    
+    if (error.message.includes('fetch')) {
+      const networkNote = document.createElement('div');
+      networkNote.style.marginTop = '10px';
+      networkNote.style.padding = '8px';
+      networkNote.style.backgroundColor = '#f8d7da';
+      networkNote.style.border = '1px solid #f5c6cb';
+      networkNote.style.borderRadius = '4px';
+      networkNote.style.fontSize = '11px';
+      networkNote.style.color = '#721c24';
+      networkNote.textContent = 'Network error: Check CORS settings and ensure the NetDocuments API endpoints are accessible from this domain.';
+      resultsArea.appendChild(networkNote);
+    }
   }
 }
 
@@ -1531,55 +1582,340 @@ async function getNetDocumentsInfo(properties) {
   resultsArea.innerHTML = '<div style="color: #666; font-style: italic;">Fetching document information...</div>';
   
   try {
-    // POC implementation - simulate document info retrieval
-    const docInfo = {
-      documentId: properties.ndDocumentId,
-      title: 'Sample Document Title',
-      author: 'Sample Author',
-      created: '2024-01-15T10:30:00Z',
-      modified: '2024-10-07T14:22:00Z',
-      fileSize: '245760',
-      version: '1.2',
-      status: 'Active',
-      repository: 'Corporate Documents',
-      note: 'POC: This data is simulated. Real implementation would call NetDocuments REST API.'
-    };
+    const config = getNetDocumentsConfig();
     
-    resultsArea.innerHTML = '';
+    if (!config.isConfigured) {
+      showNetDocumentsConfigPrompt(resultsArea, properties);
+      return;
+    }
     
-    const infoSeparator = document.createElement('div');
-    infoSeparator.style.marginTop = '10px';
-    infoSeparator.style.marginBottom = '10px';
-    infoSeparator.style.fontWeight = 'bold';
-    infoSeparator.style.borderTop = '1px solid #ccc';
-    infoSeparator.style.paddingTop = '8px';
-    infoSeparator.textContent = 'Document Information from NetDocuments';
-    resultsArea.appendChild(infoSeparator);
+    // NetDocuments REST API endpoint for document information
+    // Format: /v2/document/{documentId}
+    const documentEndpoint = `${config.baseUrl}/v2/document/${properties.ndDocumentId}`;
     
-    Object.entries(docInfo).forEach(([key, value]) => {
-      if (key !== 'note') {
-        const row = createInfoRow(key.charAt(0).toUpperCase() + key.slice(1), value);
-        row.style.borderLeft = '4px solid #007acc';
-        resultsArea.appendChild(row);
+    window.logDebug('Fetching document info from NetDocuments', { 
+      endpoint: documentEndpoint,
+      documentId: properties.ndDocumentId
+    });
+    
+    const response = await fetch(documentEndpoint, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${config.accessToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
     });
     
-    const note = document.createElement('div');
-    note.style.marginTop = '10px';
-    note.style.padding = '8px';
-    note.style.backgroundColor = '#d1ecf1';
-    note.style.border = '1px solid #bee5eb';
-    note.style.borderRadius = '4px';
-    note.style.fontSize = '11px';
-    note.style.color = '#0c5460';
-    note.textContent = docInfo.note;
-    resultsArea.appendChild(note);
+    window.logDebug('NetDocuments document info response', { 
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    });
     
-    window.logDebug('NetDocuments document info retrieved', docInfo);
+    resultsArea.innerHTML = '';
+    
+    if (response.ok) {
+      const docInfo = await response.json();
+      window.logDebug('NetDocuments document info retrieved', docInfo);
+      
+      const infoSeparator = document.createElement('div');
+      infoSeparator.style.marginTop = '10px';
+      infoSeparator.style.marginBottom = '10px';
+      infoSeparator.style.fontWeight = 'bold';
+      infoSeparator.style.borderTop = '1px solid #ccc';
+      infoSeparator.style.paddingTop = '8px';
+      infoSeparator.textContent = 'Document Information from NetDocuments';
+      resultsArea.appendChild(infoSeparator);
+      
+      // Display key document properties
+      const displayFields = [
+        { key: 'id', label: 'Document ID' },
+        { key: 'name', label: 'Document Name' },
+        { key: 'extension', label: 'File Extension' },
+        { key: 'size', label: 'File Size' },
+        { key: 'created', label: 'Created Date' },
+        { key: 'modified', label: 'Modified Date' },
+        { key: 'author', label: 'Author' },
+        { key: 'version', label: 'Version' },
+        { key: 'status', label: 'Status' },
+        { key: 'repository', label: 'Repository' },
+        { key: 'cabinet', label: 'Cabinet' },
+        { key: 'workspace', label: 'Workspace' }
+      ];
+      
+      displayFields.forEach(field => {
+        if (docInfo[field.key] !== undefined && docInfo[field.key] !== null) {
+          let value = docInfo[field.key];
+          
+          // Format specific fields
+          if (field.key === 'size' && typeof value === 'number') {
+            value = formatBytes(value);
+          } else if ((field.key === 'created' || field.key === 'modified') && value) {
+            value = new Date(value).toLocaleString();
+          } else if (typeof value === 'object') {
+            value = JSON.stringify(value);
+          }
+          
+          const row = createInfoRow(field.label, value);
+          row.style.borderLeft = '4px solid #007acc';
+          resultsArea.appendChild(row);
+        }
+      });
+      
+      // Display custom attributes if available
+      if (docInfo.attributes && Array.isArray(docInfo.attributes) && docInfo.attributes.length > 0) {
+        const attrSeparator = document.createElement('div');
+        attrSeparator.style.marginTop = '15px';
+        attrSeparator.style.marginBottom = '10px';
+        attrSeparator.style.fontWeight = 'bold';
+        attrSeparator.style.borderTop = '1px solid #ccc';
+        attrSeparator.style.paddingTop = '8px';
+        attrSeparator.textContent = 'Document Attributes';
+        resultsArea.appendChild(attrSeparator);
+        
+        docInfo.attributes.forEach(attr => {
+          if (attr.name && attr.value !== undefined) {
+            const row = createInfoRow(attr.name, attr.value);
+            row.style.borderLeft = '4px solid #28a745';
+            resultsArea.appendChild(row);
+          }
+        });
+      }
+      
+      // Add success note
+      const successNote = document.createElement('div');
+      successNote.style.marginTop = '10px';
+      successNote.style.padding = '8px';
+      successNote.style.backgroundColor = '#d1ecf1';
+      successNote.style.border = '1px solid #bee5eb';
+      successNote.style.borderRadius = '4px';
+      successNote.style.fontSize = '11px';
+      successNote.style.color = '#0c5460';
+      successNote.textContent = 'Document information successfully retrieved from NetDocuments REST API.';
+      resultsArea.appendChild(successNote);
+      
+    } else {
+      window.logDebug('NetDocuments document info request failed', { 
+        status: response.status,
+        statusText: response.statusText
+      });
+      
+      const errorText = await response.text();
+      window.logDebug('NetDocuments document info error response', errorText);
+      
+      resultsArea.appendChild(createInfoRow('Request Status', `${response.status} ${response.statusText}`));
+      resultsArea.appendChild(createInfoRow('Document ID', properties.ndDocumentId));
+      resultsArea.appendChild(createInfoRow('Error Details', errorText || 'No error details available'));
+      
+      displayNetDocumentsError(resultsArea, response.status, errorText);
+    }
     
   } catch (error) {
     window.logDebug('NetDocuments document info retrieval failed', { error: error.message });
     resultsArea.innerHTML = '';
     displaySafeError(resultsArea, `Failed to get document info: ${error.message}`);
+    
+    if (error.message.includes('fetch')) {
+      const networkNote = document.createElement('div');
+      networkNote.style.marginTop = '10px';
+      networkNote.style.padding = '8px';
+      networkNote.style.backgroundColor = '#f8d7da';
+      networkNote.style.border = '1px solid #f5c6cb';
+      networkNote.style.borderRadius = '4px';
+      networkNote.style.fontSize = '11px';
+      networkNote.style.color = '#721c24';
+      networkNote.textContent = 'Network error: Ensure the NetDocuments API is accessible and CORS is properly configured.';
+      resultsArea.appendChild(networkNote);
+    }
   }
+}
+
+// NetDocuments API Configuration and Helper Functions
+function getNetDocumentsConfig() {
+  // In a production environment, these would be stored securely
+  // For POC, we'll prompt for configuration or use environment variables
+  
+  const config = {
+    baseUrl: '',
+    accessToken: '',
+    isConfigured: false
+  };
+  
+  // Try to get from sessionStorage first (temporary for testing)
+  const storedConfig = sessionStorage.getItem('netdocs-config');
+  if (storedConfig) {
+    try {
+      const parsed = JSON.parse(storedConfig);
+      config.baseUrl = parsed.baseUrl;
+      config.accessToken = parsed.accessToken;
+      config.isConfigured = !!(config.baseUrl && config.accessToken);
+    } catch (e) {
+      window.logDebug('Failed to parse stored NetDocuments config', { error: e.message });
+    }
+  }
+  
+  // Default to EU region if no base URL configured
+  if (!config.baseUrl) {
+    config.baseUrl = 'https://api.eu.netdocuments.com';
+  }
+  
+  window.logDebug('NetDocuments config loaded', { 
+    hasBaseUrl: !!config.baseUrl,
+    hasAccessToken: !!config.accessToken,
+    isConfigured: config.isConfigured
+  });
+  
+  return config;
+}
+
+function showNetDocumentsConfigPrompt(container, properties) {
+  container.innerHTML = '';
+  
+  const configSeparator = document.createElement('div');
+  configSeparator.style.marginTop = '10px';
+  configSeparator.style.marginBottom = '15px';
+  configSeparator.style.fontWeight = 'bold';
+  configSeparator.style.borderTop = '1px solid #ccc';
+  configSeparator.style.paddingTop = '8px';
+  configSeparator.textContent = 'NetDocuments API Configuration Required';
+  container.appendChild(configSeparator);
+  
+  const configForm = document.createElement('div');
+  configForm.style.padding = '15px';
+  configForm.style.backgroundColor = '#f8f9fa';
+  configForm.style.border = '1px solid #dee2e6';
+  configForm.style.borderRadius = '4px';
+  configForm.style.marginBottom = '10px';
+  
+  // Base URL input
+  const urlLabel = document.createElement('div');
+  urlLabel.style.fontWeight = 'bold';
+  urlLabel.style.marginBottom = '5px';
+  urlLabel.textContent = 'NetDocuments API Base URL:';
+  configForm.appendChild(urlLabel);
+  
+  const urlInput = document.createElement('input');
+  urlInput.type = 'text';
+  urlInput.placeholder = 'https://api.eu.netdocuments.com';
+  urlInput.value = 'https://api.eu.netdocuments.com';
+  urlInput.style.width = '100%';
+  urlInput.style.padding = '5px';
+  urlInput.style.marginBottom = '10px';
+  urlInput.style.borderRadius = '3px';
+  urlInput.style.border = '1px solid #ccc';
+  configForm.appendChild(urlInput);
+  
+  // Access Token input
+  const tokenLabel = document.createElement('div');
+  tokenLabel.style.fontWeight = 'bold';
+  tokenLabel.style.marginBottom = '5px';
+  tokenLabel.textContent = 'Access Token:';
+  configForm.appendChild(tokenLabel);
+  
+  const tokenInput = document.createElement('input');
+  tokenInput.type = 'password';
+  tokenInput.placeholder = 'Enter your NetDocuments access token';
+  tokenInput.style.width = '100%';
+  tokenInput.style.padding = '5px';
+  tokenInput.style.marginBottom = '10px';
+  tokenInput.style.borderRadius = '3px';
+  tokenInput.style.border = '1px solid #ccc';
+  configForm.appendChild(tokenInput);
+  
+  // Save Configuration Button
+  const saveButton = document.createElement('button');
+  saveButton.textContent = 'Save Configuration';
+  saveButton.style.padding = '8px 16px';
+  saveButton.style.backgroundColor = '#007acc';
+  saveButton.style.color = 'white';
+  saveButton.style.border = 'none';
+  saveButton.style.borderRadius = '4px';
+  saveButton.style.cursor = 'pointer';
+  saveButton.style.marginRight = '10px';
+  saveButton.onclick = () => {
+    const config = {
+      baseUrl: urlInput.value.trim(),
+      accessToken: tokenInput.value.trim()
+    };
+    
+    if (config.baseUrl && config.accessToken) {
+      sessionStorage.setItem('netdocs-config', JSON.stringify(config));
+      window.logDebug('NetDocuments configuration saved', { baseUrl: config.baseUrl });
+      
+      container.innerHTML = '<div style="color: #666; font-style: italic;">Configuration saved. You can now test the API connection.</div>';
+      
+      setTimeout(() => {
+        testNetDocumentsAPI(properties);
+      }, 1000);
+    } else {
+      alert('Please provide both Base URL and Access Token');
+    }
+  };
+  configForm.appendChild(saveButton);
+  
+  container.appendChild(configForm);
+  
+  // Configuration Instructions
+  const instructions = document.createElement('div');
+  instructions.style.marginTop = '10px';
+  instructions.style.padding = '10px';
+  instructions.style.backgroundColor = '#e2e3e5';
+  instructions.style.border = '1px solid #d6d8db';
+  instructions.style.borderRadius = '4px';
+  instructions.style.fontSize = '11px';
+  instructions.innerHTML = '<strong>Configuration Instructions:</strong><br>' +
+                          '1. Obtain an access token from your NetDocuments administrator<br>' +
+                          '2. Choose the appropriate API base URL for your region<br>' +
+                          '3. Ensure CORS is configured to allow requests from this domain<br>' +
+                          '4. Access tokens are stored temporarily in browser session storage';
+  container.appendChild(instructions);
+}
+
+function displayNetDocumentsError(container, statusCode, errorText) {
+  const errorSeparator = document.createElement('div');
+  errorSeparator.style.marginTop = '15px';
+  errorSeparator.style.marginBottom = '10px';
+  errorSeparator.style.fontWeight = 'bold';
+  errorSeparator.style.borderTop = '1px solid #ccc';
+  errorSeparator.style.paddingTop = '8px';
+  errorSeparator.textContent = 'Error Details';
+  container.appendChild(errorSeparator);
+  
+  let errorMessage = 'Unknown error occurred';
+  let suggestion = 'Please check your configuration and try again';
+  
+  switch (statusCode) {
+    case 401:
+      errorMessage = 'Authentication failed';
+      suggestion = 'Check your access token and ensure it has not expired';
+      break;
+    case 403:
+      errorMessage = 'Access forbidden';
+      suggestion = 'Your account may not have permission to access this document or API endpoint';
+      break;
+    case 404:
+      errorMessage = 'Document or endpoint not found';
+      suggestion = 'Verify the document ID and API base URL are correct';
+      break;
+    case 429:
+      errorMessage = 'Rate limit exceeded';
+      suggestion = 'Too many requests. Please wait before trying again';
+      break;
+    case 500:
+      errorMessage = 'NetDocuments server error';
+      suggestion = 'There may be a temporary issue with the NetDocuments service';
+      break;
+  }
+  
+  const errorNote = document.createElement('div');
+  errorNote.style.marginTop = '10px';
+  errorNote.style.padding = '10px';
+  errorNote.style.backgroundColor = '#f8d7da';
+  errorNote.style.border = '1px solid #f5c6cb';
+  errorNote.style.borderRadius = '4px';
+  errorNote.style.fontSize = '11px';
+  errorNote.style.color = '#721c24';
+  errorNote.innerHTML = `<strong>${errorMessage}</strong><br>${suggestion}`;
+  container.appendChild(errorNote);
 }

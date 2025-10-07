@@ -57,11 +57,12 @@ This document provides comprehensive context and instructions for AI agents work
 ```
 
 ### Key Components
-1. **Tabbed Interface**: Document Info, Office Environment, System Info, Add-in Info, Debug (restricted)
+1. **Tabbed Interface**: Document Info, Office Environment, System Info, Add-in Info, DMS, Debug (restricted)
 2. **Custom Properties Engine**: Full CRUD support for Word document custom properties
-3. **Security System**: Domain-based access control (@bighand.services)
-4. **Card-based Layout**: Prevents text overflow and improves readability
-5. **Comprehensive Logging**: Real-time debug system with window.logDebug()
+3. **DMS Detection System**: NetDocuments (ndDocumentId) and iManage (IsiManageWork, DocumentNumber) document identification
+4. **Security System**: Domain-based access control (@bighand.services)
+5. **Card-based Layout**: Prevents text overflow and improves readability
+6. **Comprehensive Logging**: Real-time debug system with window.logDebug()
 
 ## 🔑 Critical Development Guidelines
 
@@ -301,6 +302,12 @@ window.logDebug('Context description', {
 **Problem**: Long property names caused layout issues
 **Solution**: Card-based layout with proper text wrapping
 **Prevention**: Test with edge cases (long property names, values)
+
+#### 6. NetDocuments DMS Integration Security
+**Problem**: Initial OAuth implementation was insecure - collected real passwords in Office add-in UI and attempted direct CORS-blocked API calls
+**Solution**: Removed insecure authentication, documented proper Office Dialog API + server-side proxy architecture
+**Prevention**: Never collect credentials directly in Office add-ins; use Office.context.ui.displayDialogAsync() for OAuth flows
+**Result**: Successful NetDocuments document detection (ndDocumentId: 4124-1017-9932) with secure implementation guidance
 
 ### Technical Architecture Decisions
 

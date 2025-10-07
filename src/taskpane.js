@@ -36,6 +36,7 @@ function loadAllDebugInfo() {
     loadDocumentInfo();
     loadAddinsInfo();
     loadSystemInfo();
+    loadDMSInfo();
     // Skip loadContextInfo since there's no context-info element in HTML
     // loadContextInfo();
   } catch (error) {
@@ -663,7 +664,7 @@ function loadAddinsInfo() {
     
     // Version from manifest - Office.js doesn't provide runtime access to manifest version
     // Source: Microsoft documentation shows no Office.context.manifest API exists
-    const ADDIN_VERSION = '1.0.24'; // Keep in sync with config/manifest.xml
+    const ADDIN_VERSION = '1.0.25'; // Keep in sync with config/manifest.xml
     container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     
@@ -1006,4 +1007,499 @@ function formatBytes(bytes) {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// DMS (Document Management System) Detection and Integration
+function loadDMSInfo() {
+  window.logDebug('DMS info loading started');
+  const container = document.getElementById('dms-info');
+  
+  if (!container) {
+    console.error('ERROR: dms-info container not found');
+    return;
+  }
+  
+  container.innerHTML = '';
+  container.appendChild(createInfoRow('Status', 'Analyzing document...'));
+  
+  // Detect DMS based on custom properties
+  detectDMS()
+    .then(dmsInfo => {
+      container.innerHTML = '';
+      displayDMSInfo(container, dmsInfo);
+    })
+    .catch(error => {
+      window.logDebug('Error in DMS detection', { error: error.message });
+      displaySafeError(container, `Error detecting DMS: ${error.message}`);
+    });
+}
+
+async function detectDMS() {
+  window.logDebug('Starting DMS detection');
+  
+  return new Promise((resolve, reject) => {
+    try {
+      // Get custom properties to detect DMS
+      if (Office.context.host === Office.HostType.Word) {
+        detectDMSWord(resolve, reject);
+      } else if (Office.context.host === Office.HostType.Excel) {
+        detectDMSExcel(resolve, reject);
+      } else if (Office.context.host === Office.HostType.PowerPoint) {
+        detectDMSPowerPoint(resolve, reject);
+      } else {
+        resolve({
+          type: 'unknown',
+          detected: false,
+          message: 'DMS detection not supported for this Office application'
+        });
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+function detectDMSWord(resolve, reject) {
+  window.logDebug('Detecting DMS in Word document');
+  
+  Word.run(async (context) => {
+    try {
+      const properties = context.document.properties;
+      const customProperties = properties.customProperties;
+      customProperties.load(['items']);
+      
+      await context.sync();
+      
+      const dmsInfo = analyzeDMSProperties(customProperties.items);
+      resolve(dmsInfo);
+      
+    } catch (error) {
+      window.logDebug('Word DMS detection failed', { error: error.message });
+      // Fallback to Office.context
+      detectDMSFallback(resolve, reject);
+    }
+  }).catch(error => {
+    window.logDebug('Word.run failed in DMS detection', { error: error.message });
+    detectDMSFallback(resolve, reject);
+  });
+}
+
+function detectDMSExcel(resolve, reject) {
+  window.logDebug('Detecting DMS in Excel document');
+  
+  Excel.run(async (context) => {
+    try {
+      const properties = context.workbook.properties;
+      const customProperties = properties.custom;
+      customProperties.load(['items']);
+      
+      await context.sync();
+      
+      const dmsInfo = analyzeDMSProperties(customProperties.items);
+      resolve(dmsInfo);
+      
+    } catch (error) {
+      window.logDebug('Excel DMS detection failed', { error: error.message });
+      detectDMSFallback(resolve, reject);
+    }
+  }).catch(error => {
+    window.logDebug('Excel.run failed in DMS detection', { error: error.message });
+    detectDMSFallback(resolve, reject);
+  });
+}
+
+function detectDMSPowerPoint(resolve, reject) {
+  window.logDebug('Detecting DMS in PowerPoint document');
+  
+  // PowerPoint has limited API support, use fallback approach
+  detectDMSFallback(resolve, reject);
+}
+
+function detectDMSFallback(resolve, reject) {
+  window.logDebug('Using DMS detection fallback via Office.context');
+  
+  try {
+    if (Office.context.document && Office.context.document.customProperties) {
+      Office.context.document.customProperties.getAsync((result) => {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          window.logDebug('Custom properties loaded for DMS detection', { count: result.value.length });
+          const dmsInfo = analyzeDMSPropertiesFallback(result.value);
+          resolve(dmsInfo);
+        } else {
+          window.logDebug('Failed to load custom properties for DMS detection', result.error);
+          resolve({
+            type: 'unknown',
+            detected: false,
+            message: 'Unable to access custom properties for DMS detection'
+          });
+        }
+      });
+    } else {
+      resolve({
+        type: 'unknown',
+        detected: false,
+        message: 'Custom properties not available in this Office version'
+      });
+    }
+  } catch (error) {
+    reject(error);
+  }
+}
+
+function analyzeDMSProperties(customProperties) {
+  window.logDebug('Analyzing custom properties for DMS signatures', { count: customProperties.length });
+  
+  let netDocumentsId = null;
+  let iManageWork = null;
+  let documentNumber = null;
+  let allProperties = [];
+  
+  customProperties.forEach(prop => {
+    const key = prop.key.toLowerCase();
+    const value = prop.value;
+    
+    allProperties.push({ key: prop.key, value: value });
+    
+    // NetDocuments detection
+    if (key === 'nddocumentid') {
+      netDocumentsId = value;
+      window.logDebug('NetDocuments ID found', { id: value });
+    }
+    
+    // iManage detection
+    if (key === 'isimanagework') {
+      iManageWork = value;
+      window.logDebug('iManage Work indicator found', { value: value });
+    }
+    
+    if (key === 'documentnumber') {
+      documentNumber = value;
+      window.logDebug('Document Number found', { number: value });
+    }
+  });
+  
+  // Determine DMS type
+  if (netDocumentsId) {
+    return {
+      type: 'netdocuments',
+      detected: true,
+      properties: {
+        ndDocumentId: netDocumentsId
+      },
+      allProperties: allProperties,
+      message: 'NetDocuments document detected'
+    };
+  }
+  
+  if (iManageWork && documentNumber) {
+    return {
+      type: 'imanage',
+      detected: true,
+      properties: {
+        IsiManageWork: iManageWork,
+        DocumentNumber: documentNumber
+      },
+      allProperties: allProperties,
+      message: 'iManage document detected'
+    };
+  }
+  
+  return {
+    type: 'unknown',
+    detected: false,
+    allProperties: allProperties,
+    message: 'No DMS signatures found in document custom properties'
+  };
+}
+
+function analyzeDMSPropertiesFallback(customProperties) {
+  window.logDebug('Analyzing custom properties for DMS signatures (fallback)', { count: customProperties.length });
+  
+  let netDocumentsId = null;
+  let iManageWork = null;
+  let documentNumber = null;
+  let allProperties = [];
+  
+  customProperties.forEach(prop => {
+    const key = prop.name.toLowerCase();
+    const value = prop.value;
+    
+    allProperties.push({ key: prop.name, value: value });
+    
+    // NetDocuments detection
+    if (key === 'nddocumentid') {
+      netDocumentsId = value;
+      window.logDebug('NetDocuments ID found (fallback)', { id: value });
+    }
+    
+    // iManage detection
+    if (key === 'isimanagework') {
+      iManageWork = value;
+      window.logDebug('iManage Work indicator found (fallback)', { value: value });
+    }
+    
+    if (key === 'documentnumber') {
+      documentNumber = value;
+      window.logDebug('Document Number found (fallback)', { number: value });
+    }
+  });
+  
+  // Determine DMS type
+  if (netDocumentsId) {
+    return {
+      type: 'netdocuments',
+      detected: true,
+      properties: {
+        ndDocumentId: netDocumentsId
+      },
+      allProperties: allProperties,
+      message: 'NetDocuments document detected'
+    };
+  }
+  
+  if (iManageWork && documentNumber) {
+    return {
+      type: 'imanage',
+      detected: true,
+      properties: {
+        IsiManageWork: iManageWork,
+        DocumentNumber: documentNumber
+      },
+      allProperties: allProperties,
+      message: 'iManage document detected'
+    };
+  }
+  
+  return {
+    type: 'unknown',
+    detected: false,
+    allProperties: allProperties,
+    message: 'No DMS signatures found in document custom properties'
+  };
+}
+
+function displayDMSInfo(container, dmsInfo) {
+  window.logDebug('Displaying DMS info', dmsInfo);
+  
+  // DMS Detection Results
+  container.appendChild(createInfoRow('DMS Type', dmsInfo.detected ? dmsInfo.type.toUpperCase() : 'Not Detected'));
+  container.appendChild(createInfoRow('Detection Status', dmsInfo.message));
+  
+  if (dmsInfo.detected) {
+    // DMS-specific information
+    const separator = document.createElement('div');
+    separator.style.marginTop = '20px';
+    separator.style.marginBottom = '15px';
+    separator.style.fontWeight = 'bold';
+    separator.style.borderTop = '1px solid #ccc';
+    separator.style.paddingTop = '10px';
+    separator.textContent = `${dmsInfo.type.toUpperCase()} Properties`;
+    container.appendChild(separator);
+    
+    // Display DMS-specific properties
+    Object.entries(dmsInfo.properties).forEach(([key, value]) => {
+      const row = createInfoRow(key, value);
+      row.style.borderLeft = '4px solid #007acc';
+      container.appendChild(row);
+    });
+    
+    // Add DMS actions section
+    if (dmsInfo.type === 'netdocuments') {
+      addNetDocumentsActions(container, dmsInfo.properties);
+    } else if (dmsInfo.type === 'imanage') {
+      addIManageActions(container, dmsInfo.properties);
+    }
+  }
+  
+  // All Custom Properties Section (for debugging)
+  if (dmsInfo.allProperties && dmsInfo.allProperties.length > 0) {
+    const allPropsSeparator = document.createElement('div');
+    allPropsSeparator.style.marginTop = '20px';
+    allPropsSeparator.style.marginBottom = '15px';
+    allPropsSeparator.style.fontWeight = 'bold';
+    allPropsSeparator.style.borderTop = '1px solid #ccc';
+    allPropsSeparator.style.paddingTop = '10px';
+    allPropsSeparator.textContent = 'All Custom Properties';
+    container.appendChild(allPropsSeparator);
+    
+    dmsInfo.allProperties.forEach(prop => {
+      const row = createInfoRow(prop.key, prop.value);
+      row.style.borderLeft = '4px solid #28a745';
+      container.appendChild(row);
+    });
+    
+    container.appendChild(createInfoRow('Total Custom Properties', dmsInfo.allProperties.length));
+  }
+}
+
+function addNetDocumentsActions(container, properties) {
+  window.logDebug('Adding NetDocuments actions', properties);
+  
+  const actionsSeparator = document.createElement('div');
+  actionsSeparator.style.marginTop = '20px';
+  actionsSeparator.style.marginBottom = '15px';
+  actionsSeparator.style.fontWeight = 'bold';
+  actionsSeparator.style.borderTop = '1px solid #ccc';
+  actionsSeparator.style.paddingTop = '10px';
+  actionsSeparator.textContent = 'NetDocuments Actions';
+  container.appendChild(actionsSeparator);
+  
+  // Test API Connection Button
+  const testButton = document.createElement('button');
+  testButton.textContent = 'Test NetDocuments API Connection';
+  testButton.style.margin = '10px 0';
+  testButton.style.padding = '8px 16px';
+  testButton.style.backgroundColor = '#007acc';
+  testButton.style.color = 'white';
+  testButton.style.border = 'none';
+  testButton.style.borderRadius = '4px';
+  testButton.style.cursor = 'pointer';
+  testButton.onclick = () => testNetDocumentsAPI(properties);
+  container.appendChild(testButton);
+  
+  // Get Document Info Button
+  const docInfoButton = document.createElement('button');
+  docInfoButton.textContent = 'Get Document Information';
+  docInfoButton.style.margin = '10px 0 10px 10px';
+  docInfoButton.style.padding = '8px 16px';
+  docInfoButton.style.backgroundColor = '#28a745';
+  docInfoButton.style.color = 'white';
+  docInfoButton.style.border = 'none';
+  docInfoButton.style.borderRadius = '4px';
+  docInfoButton.style.cursor = 'pointer';
+  docInfoButton.onclick = () => getNetDocumentsInfo(properties);
+  container.appendChild(docInfoButton);
+  
+  // API Results area
+  const resultsArea = document.createElement('div');
+  resultsArea.id = 'netdocs-results';
+  resultsArea.style.marginTop = '15px';
+  container.appendChild(resultsArea);
+}
+
+function addIManageActions(container, properties) {
+  window.logDebug('Adding iManage actions', properties);
+  
+  const actionsSeparator = document.createElement('div');
+  actionsSeparator.style.marginTop = '20px';
+  actionsSeparator.style.marginBottom = '15px';
+  actionsSeparator.style.fontWeight = 'bold';
+  actionsSeparator.style.borderTop = '1px solid #ccc';
+  actionsSeparator.style.paddingTop = '10px';
+  actionsSeparator.textContent = 'iManage Actions';
+  container.appendChild(actionsSeparator);
+  
+  const placeholder = document.createElement('div');
+  placeholder.style.padding = '10px';
+  placeholder.style.backgroundColor = '#f8f9fa';
+  placeholder.style.border = '1px solid #dee2e6';
+  placeholder.style.borderRadius = '4px';
+  placeholder.style.fontStyle = 'italic';
+  placeholder.textContent = 'iManage API integration will be implemented in future version';
+  container.appendChild(placeholder);
+}
+
+// NetDocuments API Functions (POC Implementation)
+async function testNetDocumentsAPI(properties) {
+  window.logDebug('Testing NetDocuments API connection', properties);
+  
+  const resultsArea = document.getElementById('netdocs-results');
+  resultsArea.innerHTML = '<div style="color: #666; font-style: italic;">Testing API connection...</div>';
+  
+  try {
+    // This is a POC - in production you would need proper authentication
+    // For now, we'll simulate the API call structure
+    
+    const testResult = {
+      status: 'success',
+      message: 'POC: NetDocuments API structure ready',
+      documentId: properties.ndDocumentId,
+      timestamp: new Date().toISOString(),
+      note: 'This is a proof-of-concept. Actual API calls require authentication and endpoints.'
+    };
+    
+    resultsArea.innerHTML = '';
+    resultsArea.appendChild(createInfoRow('API Test Status', testResult.status));
+    resultsArea.appendChild(createInfoRow('Message', testResult.message));
+    resultsArea.appendChild(createInfoRow('Document ID', testResult.documentId));
+    resultsArea.appendChild(createInfoRow('Test Time', testResult.timestamp));
+    
+    const note = document.createElement('div');
+    note.style.marginTop = '10px';
+    note.style.padding = '8px';
+    note.style.backgroundColor = '#fff3cd';
+    note.style.border = '1px solid #ffeaa7';
+    note.style.borderRadius = '4px';
+    note.style.fontSize = '11px';
+    note.style.color = '#856404';
+    note.textContent = testResult.note;
+    resultsArea.appendChild(note);
+    
+    window.logDebug('NetDocuments API test completed', testResult);
+    
+  } catch (error) {
+    window.logDebug('NetDocuments API test failed', { error: error.message });
+    resultsArea.innerHTML = '';
+    displaySafeError(resultsArea, `API test failed: ${error.message}`);
+  }
+}
+
+async function getNetDocumentsInfo(properties) {
+  window.logDebug('Getting NetDocuments document information', properties);
+  
+  const resultsArea = document.getElementById('netdocs-results');
+  resultsArea.innerHTML = '<div style="color: #666; font-style: italic;">Fetching document information...</div>';
+  
+  try {
+    // POC implementation - simulate document info retrieval
+    const docInfo = {
+      documentId: properties.ndDocumentId,
+      title: 'Sample Document Title',
+      author: 'Sample Author',
+      created: '2024-01-15T10:30:00Z',
+      modified: '2024-10-07T14:22:00Z',
+      fileSize: '245760',
+      version: '1.2',
+      status: 'Active',
+      repository: 'Corporate Documents',
+      note: 'POC: This data is simulated. Real implementation would call NetDocuments REST API.'
+    };
+    
+    resultsArea.innerHTML = '';
+    
+    const infoSeparator = document.createElement('div');
+    infoSeparator.style.marginTop = '10px';
+    infoSeparator.style.marginBottom = '10px';
+    infoSeparator.style.fontWeight = 'bold';
+    infoSeparator.style.borderTop = '1px solid #ccc';
+    infoSeparator.style.paddingTop = '8px';
+    infoSeparator.textContent = 'Document Information from NetDocuments';
+    resultsArea.appendChild(infoSeparator);
+    
+    Object.entries(docInfo).forEach(([key, value]) => {
+      if (key !== 'note') {
+        const row = createInfoRow(key.charAt(0).toUpperCase() + key.slice(1), value);
+        row.style.borderLeft = '4px solid #007acc';
+        resultsArea.appendChild(row);
+      }
+    });
+    
+    const note = document.createElement('div');
+    note.style.marginTop = '10px';
+    note.style.padding = '8px';
+    note.style.backgroundColor = '#d1ecf1';
+    note.style.border = '1px solid #bee5eb';
+    note.style.borderRadius = '4px';
+    note.style.fontSize = '11px';
+    note.style.color = '#0c5460';
+    note.textContent = docInfo.note;
+    resultsArea.appendChild(note);
+    
+    window.logDebug('NetDocuments document info retrieved', docInfo);
+    
+  } catch (error) {
+    window.logDebug('NetDocuments document info retrieval failed', { error: error.message });
+    resultsArea.innerHTML = '';
+    displaySafeError(resultsArea, `Failed to get document info: ${error.message}`);
+  }
 }

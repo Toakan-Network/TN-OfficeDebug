@@ -664,7 +664,7 @@ function loadAddinsInfo() {
     
     // Version from manifest - Office.js doesn't provide runtime access to manifest version
     // Source: Microsoft documentation shows no Office.context.manifest API exists
-    const ADDIN_VERSION = '1.0.25'; // Keep in sync with config/manifest.xml
+    const ADDIN_VERSION = '1.0.26'; // Keep in sync with config/manifest.xml
     container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     
@@ -1062,24 +1062,58 @@ async function detectDMS() {
 function detectDMSWord(resolve, reject) {
   window.logDebug('Detecting DMS in Word document');
   
+  // First check if Word API is available
+  if (typeof Word === 'undefined' || typeof Word.run !== 'function') {
+    window.logDebug('Word API not available, using fallback');
+    detectDMSFallback(resolve, reject);
+    return;
+  }
+  
   Word.run(async (context) => {
     try {
+      window.logDebug('Inside Word.run context for DMS detection');
       const properties = context.document.properties;
+      window.logDebug('Got document properties object', { hasProperties: !!properties });
+      
       const customProperties = properties.customProperties;
+      window.logDebug('Got custom properties object', { hasCustomProperties: !!customProperties });
+      
       customProperties.load(['items']);
+      window.logDebug('Custom properties load called, about to sync');
       
       await context.sync();
+      window.logDebug('Context sync completed for DMS detection');
+      
+      window.logDebug('Custom properties items loaded', {
+        hasItems: !!customProperties.items,
+        itemCount: customProperties.items ? customProperties.items.length : 0,
+        items: customProperties.items ? customProperties.items.map(item => ({
+          key: item.key,
+          value: item.value,
+          type: item.type
+        })) : null
+      });
       
       const dmsInfo = analyzeDMSProperties(customProperties.items);
+      window.logDebug('DMS analysis completed in Word', dmsInfo);
       resolve(dmsInfo);
       
-    } catch (error) {
-      window.logDebug('Word DMS detection failed', { error: error.message });
-      // Fallback to Office.context
-      detectDMSFallback(resolve, reject);
+    } catch (innerError) {
+      window.logDebug('Error inside Word.run for DMS detection', {
+        error: innerError.message,
+        stack: innerError.stack,
+        name: innerError.name
+      });
+      throw innerError;
     }
   }).catch(error => {
-    window.logDebug('Word.run failed in DMS detection', { error: error.message });
+    window.logDebug('Word.run failed in DMS detection', { 
+      error: error.message,
+      name: error.name,
+      stack: error.stack
+    });
+    // Fallback to Office.context
+    window.logDebug('Falling back to Office.context for DMS detection');
     detectDMSFallback(resolve, reject);
   });
 }
@@ -1119,29 +1153,73 @@ function detectDMSFallback(resolve, reject) {
   window.logDebug('Using DMS detection fallback via Office.context');
   
   try {
+    window.logDebug('Office.context availability check', {
+      hasOfficeContext: !!Office.context,
+      hasDocument: !!(Office.context && Office.context.document),
+      hasCustomProperties: !!(Office.context && Office.context.document && Office.context.document.customProperties),
+      documentUrl: Office.context && Office.context.document ? Office.context.document.url : 'not available'
+    });
+    
     if (Office.context.document && Office.context.document.customProperties) {
+      window.logDebug('Attempting to get custom properties via Office.context.document.customProperties.getAsync');
+      
       Office.context.document.customProperties.getAsync((result) => {
+        window.logDebug('Custom properties getAsync callback executed', {
+          status: result.status,
+          hasValue: !!result.value,
+          valueType: typeof result.value,
+          valueLength: result.value ? result.value.length : 0,
+          error: result.error ? result.error.message : null
+        });
+        
         if (result.status === Office.AsyncResultStatus.Succeeded) {
-          window.logDebug('Custom properties loaded for DMS detection', { count: result.value.length });
+          window.logDebug('Custom properties loaded for DMS detection', { 
+            count: result.value.length,
+            properties: result.value.map(p => ({ name: p.name, value: p.value, type: typeof p.value }))
+          });
           const dmsInfo = analyzeDMSPropertiesFallback(result.value);
           resolve(dmsInfo);
         } else {
-          window.logDebug('Failed to load custom properties for DMS detection', result.error);
+          window.logDebug('Failed to load custom properties for DMS detection', {
+            status: result.status,
+            error: result.error ? result.error.message : 'Unknown error',
+            errorName: result.error ? result.error.name : null,
+            errorCode: result.error ? result.error.code : null
+          });
           resolve({
             type: 'unknown',
             detected: false,
-            message: 'Unable to access custom properties for DMS detection'
+            message: `Unable to access custom properties: ${result.error ? result.error.message : 'Unknown error'}`,
+            debugInfo: {
+              status: result.status,
+              error: result.error
+            }
           });
         }
       });
     } else {
+      window.logDebug('Office.context.document.customProperties not available', {
+        hasOfficeContext: !!Office.context,
+        hasDocument: !!(Office.context && Office.context.document),
+        documentProperties: Office.context && Office.context.document ? Object.keys(Office.context.document) : null
+      });
       resolve({
         type: 'unknown',
         detected: false,
-        message: 'Custom properties not available in this Office version'
+        message: 'Custom properties API not available in this Office version',
+        debugInfo: {
+          hasOfficeContext: !!Office.context,
+          hasDocument: !!(Office.context && Office.context.document),
+          availableDocumentProperties: Office.context && Office.context.document ? Object.keys(Office.context.document) : null
+        }
       });
     }
   } catch (error) {
+    window.logDebug('Exception in DMS fallback detection', {
+      error: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     reject(error);
   }
 }
@@ -1285,6 +1363,24 @@ function displayDMSInfo(container, dmsInfo) {
   container.appendChild(createInfoRow('DMS Type', dmsInfo.detected ? dmsInfo.type.toUpperCase() : 'Not Detected'));
   container.appendChild(createInfoRow('Detection Status', dmsInfo.message));
   
+  // Add debug information
+  if (dmsInfo.debugInfo) {
+    const debugSeparator = document.createElement('div');
+    debugSeparator.style.marginTop = '20px';
+    debugSeparator.style.marginBottom = '15px';
+    debugSeparator.style.fontWeight = 'bold';
+    debugSeparator.style.borderTop = '1px solid #ccc';
+    debugSeparator.style.paddingTop = '10px';
+    debugSeparator.textContent = 'Debug Information';
+    container.appendChild(debugSeparator);
+    
+    Object.entries(dmsInfo.debugInfo).forEach(([key, value]) => {
+      const row = createInfoRow(key, JSON.stringify(value));
+      row.style.borderLeft = '4px solid #ff6b6b';
+      container.appendChild(row);
+    });
+  }
+  
   if (dmsInfo.detected) {
     // DMS-specific information
     const separator = document.createElement('div');
@@ -1329,6 +1425,19 @@ function displayDMSInfo(container, dmsInfo) {
     });
     
     container.appendChild(createInfoRow('Total Custom Properties', dmsInfo.allProperties.length));
+  } else {
+    // Show that no custom properties were found
+    const noPropsSeparator = document.createElement('div');
+    noPropsSeparator.style.marginTop = '20px';
+    noPropsSeparator.style.marginBottom = '15px';
+    noPropsSeparator.style.fontWeight = 'bold';
+    noPropsSeparator.style.borderTop = '1px solid #ccc';
+    noPropsSeparator.style.paddingTop = '10px';
+    noPropsSeparator.textContent = 'Custom Properties Status';
+    container.appendChild(noPropsSeparator);
+    
+    container.appendChild(createInfoRow('Custom Properties Found', '0'));
+    container.appendChild(createInfoRow('Note', 'No custom properties detected - check console for detailed debugging info'));
   }
 }
 

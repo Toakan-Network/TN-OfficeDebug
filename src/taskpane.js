@@ -664,7 +664,7 @@ function loadAddinsInfo() {
     
     // Version from manifest - Office.js doesn't provide runtime access to manifest version
     // Source: Microsoft documentation shows no Office.context.manifest API exists
-    const ADDIN_VERSION = '1.0.26'; // Keep in sync with config/manifest.xml
+    const ADDIN_VERSION = '1.0.27'; // Keep in sync with config/manifest.xml
     container.appendChild(createInfoRow('Version', ADDIN_VERSION));
     container.appendChild(createInfoRow('License', 'MIT'));
     
@@ -1072,13 +1072,21 @@ function detectDMSWord(resolve, reject) {
   Word.run(async (context) => {
     try {
       window.logDebug('Inside Word.run context for DMS detection');
-      const properties = context.document.properties;
-      window.logDebug('Got document properties object', { hasProperties: !!properties });
       
+      // Use the exact same approach as loadWordDocumentInfo which works
+      const doc = context.document;
+      const properties = doc.properties;
+      window.logDebug('Got document and properties objects', { 
+        hasDoc: !!doc, 
+        hasProperties: !!properties 
+      });
+      
+      // Load custom properties using the exact same pattern as Document Info tab
       const customProperties = properties.customProperties;
       window.logDebug('Got custom properties object', { hasCustomProperties: !!customProperties });
       
-      customProperties.load(['items']);
+      // Use 'items' string instead of array (match working code exactly)
+      customProperties.load('items');
       window.logDebug('Custom properties load called, about to sync');
       
       await context.sync();
@@ -1150,7 +1158,7 @@ function detectDMSPowerPoint(resolve, reject) {
 }
 
 function detectDMSFallback(resolve, reject) {
-  window.logDebug('Using DMS detection fallback via Office.context');
+  window.logDebug('Using DMS detection fallback - Office.context.document.customProperties API not available');
   
   try {
     window.logDebug('Office.context availability check', {
@@ -1160,60 +1168,23 @@ function detectDMSFallback(resolve, reject) {
       documentUrl: Office.context && Office.context.document ? Office.context.document.url : 'not available'
     });
     
-    if (Office.context.document && Office.context.document.customProperties) {
-      window.logDebug('Attempting to get custom properties via Office.context.document.customProperties.getAsync');
-      
-      Office.context.document.customProperties.getAsync((result) => {
-        window.logDebug('Custom properties getAsync callback executed', {
-          status: result.status,
-          hasValue: !!result.value,
-          valueType: typeof result.value,
-          valueLength: result.value ? result.value.length : 0,
-          error: result.error ? result.error.message : null
-        });
-        
-        if (result.status === Office.AsyncResultStatus.Succeeded) {
-          window.logDebug('Custom properties loaded for DMS detection', { 
-            count: result.value.length,
-            properties: result.value.map(p => ({ name: p.name, value: p.value, type: typeof p.value }))
-          });
-          const dmsInfo = analyzeDMSPropertiesFallback(result.value);
-          resolve(dmsInfo);
-        } else {
-          window.logDebug('Failed to load custom properties for DMS detection', {
-            status: result.status,
-            error: result.error ? result.error.message : 'Unknown error',
-            errorName: result.error ? result.error.name : null,
-            errorCode: result.error ? result.error.code : null
-          });
-          resolve({
-            type: 'unknown',
-            detected: false,
-            message: `Unable to access custom properties: ${result.error ? result.error.message : 'Unknown error'}`,
-            debugInfo: {
-              status: result.status,
-              error: result.error
-            }
-          });
-        }
-      });
-    } else {
-      window.logDebug('Office.context.document.customProperties not available', {
+    // Office.context.document.customProperties doesn't exist in this Office version
+    // This is expected - Word custom properties should be accessed via Word.run API
+    window.logDebug('Office.context.document.customProperties API not available (this is normal)');
+    
+    resolve({
+      type: 'unknown',
+      detected: false,
+      message: 'Custom properties must be accessed via Word API - Office.context.document.customProperties not available',
+      debugInfo: {
+        reason: 'Office.context.document.customProperties API not supported',
+        suggestion: 'Word.run should be used instead',
         hasOfficeContext: !!Office.context,
         hasDocument: !!(Office.context && Office.context.document),
-        documentProperties: Office.context && Office.context.document ? Object.keys(Office.context.document) : null
-      });
-      resolve({
-        type: 'unknown',
-        detected: false,
-        message: 'Custom properties API not available in this Office version',
-        debugInfo: {
-          hasOfficeContext: !!Office.context,
-          hasDocument: !!(Office.context && Office.context.document),
-          availableDocumentProperties: Office.context && Office.context.document ? Object.keys(Office.context.document) : null
-        }
-      });
-    }
+        availableDocumentProperties: Office.context && Office.context.document ? Object.keys(Office.context.document) : null
+      }
+    });
+    
   } catch (error) {
     window.logDebug('Exception in DMS fallback detection', {
       error: error.message,

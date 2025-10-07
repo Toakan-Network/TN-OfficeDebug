@@ -1479,7 +1479,118 @@ function addIManageActions(container, properties) {
   container.appendChild(placeholder);
 }
 
-// NetDocuments API Functions (Real REST API Implementation)
+async function refreshNetDocumentsToken() {
+  const config = getNetDocumentsConfig();
+  
+  if (!config.refreshToken) {
+    throw new Error('No refresh token available');
+  }
+  
+  const tokenEndpoint = `${config.oauthUrl}/v2/oauth2/token`;
+  
+  const refreshRequest = {
+    grant_type: 'refresh_token',
+    refresh_token: config.refreshToken,
+    client_id: config.clientId,
+    client_secret: config.clientSecret
+  };
+  
+  window.logDebug('Refreshing NetDocuments access token');
+  
+  const response = await fetch(tokenEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json'
+    },
+    body: new URLSearchParams(refreshRequest)
+  });
+  
+  if (response.ok) {
+    const tokenData = await response.json();
+    
+    // Calculate token expiry
+    const expiryTime = new Date();
+    expiryTime.setSeconds(expiryTime.getSeconds() + (tokenData.expires_in || 3600));
+    
+    // Store new tokens
+    const tokens = {
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token || config.refreshToken, // Keep old refresh token if new one not provided
+      tokenExpiry: expiryTime.toISOString()
+    };
+    
+    sessionStorage.setItem('netdocs-tokens', JSON.stringify(tokens));
+    window.logDebug('NetDocuments token refreshed successfully');
+    
+    return tokenData.access_token;
+  } else {
+    const errorText = await response.text();
+    window.logDebug('NetDocuments token refresh failed', { 
+      status: response.status,
+      error: errorText
+    });
+    throw new Error(`Token refresh failed: ${response.status} ${response.statusText}`);
+  }
+}
+
+async function makeNetDocumentsAPICall(endpoint, options = {}) {
+  let config = getNetDocumentsConfig();
+  
+  // If not configured or token expired, try to refresh
+  if (!config.isConfigured && config.refreshToken) {
+    try {
+      await refreshNetDocumentsToken();
+      config = getNetDocumentsConfig(); // Reload config with new tokens
+    } catch (error) {
+      window.logDebug('Token refresh failed', { error: error.message });
+      throw new Error('Authentication required - please re-authenticate');
+    }
+  }
+  
+  if (!config.isConfigured) {
+    throw new Error('NetDocuments not configured - authentication required');
+  }
+  
+  const url = `${config.baseUrl}${endpoint}`;
+  const requestOptions = {
+    method: options.method || 'GET',
+    headers: {
+      'Authorization': `Bearer ${config.accessToken}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...options.headers
+    },
+    ...options
+  };
+  
+  window.logDebug('Making NetDocuments API call', { 
+    endpoint: endpoint,
+    method: requestOptions.method
+  });
+  
+  const response = await fetch(url, requestOptions);
+  
+  // If unauthorized, try to refresh token once
+  if (response.status === 401 && config.refreshToken) {
+    window.logDebug('API call unauthorized, attempting token refresh');
+    try {
+      await refreshNetDocumentsToken();
+      config = getNetDocumentsConfig();
+      
+      // Retry the original request with new token
+      requestOptions.headers['Authorization'] = `Bearer ${config.accessToken}`;
+      return await fetch(url, requestOptions);
+    } catch (refreshError) {
+      window.logDebug('Token refresh on 401 failed', { error: refreshError.message });
+      throw new Error('Authentication expired - please re-authenticate');
+    }
+  }
+  
+  return response;
+}
+
+// NetDocuments API Functions (OAuth Implementation)
 async function testNetDocumentsAPI(properties) {
   window.logDebug('Testing NetDocuments API connection', properties);
   
@@ -1487,7 +1598,6 @@ async function testNetDocumentsAPI(properties) {
   resultsArea.innerHTML = '<div style="color: #666; font-style: italic;">Testing API connection...</div>';
   
   try {
-    // NetDocuments REST API Configuration
     const config = getNetDocumentsConfig();
     
     if (!config.isConfigured) {
@@ -1496,18 +1606,7 @@ async function testNetDocumentsAPI(properties) {
     }
     
     // Test API connectivity with a simple repository list call
-    const testEndpoint = `${config.baseUrl}/v2/repository`;
-    
-    window.logDebug('Testing NetDocuments API endpoint', { endpoint: testEndpoint });
-    
-    const response = await fetch(testEndpoint, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${config.accessToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
-    });
+    const response = await makeNetDocumentsAPICall('/v2/repository');
     
     window.logDebug('NetDocuments API response received', { 
       status: response.status,
@@ -1523,7 +1622,9 @@ async function testNetDocumentsAPI(properties) {
       
       resultsArea.appendChild(createInfoRow('API Test Status', 'Success'));
       resultsArea.appendChild(createInfoRow('Response Status', `${response.status} ${response.statusText}`));
-      resultsArea.appendChild(createInfoRow('Base URL', config.baseUrl));
+      resultsArea.appendChild(createInfoRow('OAuth Server', config.oauthUrl));
+      resultsArea.appendChild(createInfoRow('API Server', config.baseUrl));
+      resultsArea.appendChild(createInfoRow('Client ID', config.clientId));
       resultsArea.appendChild(createInfoRow('Test Endpoint', '/v2/repository'));
       resultsArea.appendChild(createInfoRow('Repositories Found', data.length || 'N/A'));
       resultsArea.appendChild(createInfoRow('Test Time', new Date().toISOString()));
@@ -1536,7 +1637,7 @@ async function testNetDocumentsAPI(properties) {
       successNote.style.borderRadius = '4px';
       successNote.style.fontSize = '11px';
       successNote.style.color = '#155724';
-      successNote.textContent = 'NetDocuments API connection successful! You can now retrieve document information.';
+      successNote.textContent = 'NetDocuments OAuth API connection successful! You can now retrieve document information.';
       resultsArea.appendChild(successNote);
       
     } else {
@@ -1558,19 +1659,24 @@ async function testNetDocumentsAPI(properties) {
   } catch (error) {
     window.logDebug('NetDocuments API test failed with exception', { error: error.message });
     resultsArea.innerHTML = '';
-    displaySafeError(resultsArea, `API test failed: ${error.message}`);
     
-    if (error.message.includes('fetch')) {
-      const networkNote = document.createElement('div');
-      networkNote.style.marginTop = '10px';
-      networkNote.style.padding = '8px';
-      networkNote.style.backgroundColor = '#f8d7da';
-      networkNote.style.border = '1px solid #f5c6cb';
-      networkNote.style.borderRadius = '4px';
-      networkNote.style.fontSize = '11px';
-      networkNote.style.color = '#721c24';
-      networkNote.textContent = 'Network error: Check CORS settings and ensure the NetDocuments API endpoints are accessible from this domain.';
-      resultsArea.appendChild(networkNote);
+    if (error.message.includes('authentication required')) {
+      showNetDocumentsConfigPrompt(resultsArea, properties);
+    } else {
+      displaySafeError(resultsArea, `API test failed: ${error.message}`);
+      
+      if (error.message.includes('fetch')) {
+        const networkNote = document.createElement('div');
+        networkNote.style.marginTop = '10px';
+        networkNote.style.padding = '8px';
+        networkNote.style.backgroundColor = '#f8d7da';
+        networkNote.style.border = '1px solid #f5c6cb';
+        networkNote.style.borderRadius = '4px';
+        networkNote.style.fontSize = '11px';
+        networkNote.style.color = '#721c24';
+        networkNote.textContent = 'Network error: Check CORS settings and ensure the NetDocuments API endpoints are accessible from this domain.';
+        resultsArea.appendChild(networkNote);
+      }
     }
   }
 }
@@ -1591,21 +1697,11 @@ async function getNetDocumentsInfo(properties) {
     
     // NetDocuments REST API endpoint for document information
     // Format: /v2/document/{documentId}
-    const documentEndpoint = `${config.baseUrl}/v2/document/${properties.ndDocumentId}`;
-    
     window.logDebug('Fetching document info from NetDocuments', { 
-      endpoint: documentEndpoint,
       documentId: properties.ndDocumentId
     });
     
-    const response = await fetch(documentEndpoint, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${config.accessToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
-    });
+    const response = await makeNetDocumentsAPICall(`/v2/document/${properties.ndDocumentId}`);
     
     window.logDebug('NetDocuments document info response', { 
       status: response.status,
@@ -1714,55 +1810,72 @@ async function getNetDocumentsInfo(properties) {
   } catch (error) {
     window.logDebug('NetDocuments document info retrieval failed', { error: error.message });
     resultsArea.innerHTML = '';
-    displaySafeError(resultsArea, `Failed to get document info: ${error.message}`);
     
-    if (error.message.includes('fetch')) {
-      const networkNote = document.createElement('div');
-      networkNote.style.marginTop = '10px';
-      networkNote.style.padding = '8px';
-      networkNote.style.backgroundColor = '#f8d7da';
-      networkNote.style.border = '1px solid #f5c6cb';
-      networkNote.style.borderRadius = '4px';
-      networkNote.style.fontSize = '11px';
-      networkNote.style.color = '#721c24';
-      networkNote.textContent = 'Network error: Ensure the NetDocuments API is accessible and CORS is properly configured.';
-      resultsArea.appendChild(networkNote);
+    if (error.message.includes('authentication required')) {
+      showNetDocumentsConfigPrompt(resultsArea, properties);
+    } else {
+      displaySafeError(resultsArea, `Failed to get document info: ${error.message}`);
+      
+      if (error.message.includes('fetch')) {
+        const networkNote = document.createElement('div');
+        networkNote.style.marginTop = '10px';
+        networkNote.style.padding = '8px';
+        networkNote.style.backgroundColor = '#f8d7da';
+        networkNote.style.border = '1px solid #f5c6cb';
+        networkNote.style.borderRadius = '4px';
+        networkNote.style.fontSize = '11px';
+        networkNote.style.color = '#721c24';
+        networkNote.textContent = 'Network error: Ensure the NetDocuments API is accessible and CORS is properly configured.';
+        resultsArea.appendChild(networkNote);
+      }
     }
   }
 }
 
 // NetDocuments API Configuration and Helper Functions
 function getNetDocumentsConfig() {
-  // In a production environment, these would be stored securely
-  // For POC, we'll prompt for configuration or use environment variables
-  
+  // NetDocuments OAuth Configuration
   const config = {
-    baseUrl: '',
+    baseUrl: 'https://api.eu.netdocuments.com',
+    oauthUrl: 'https://eu.netdocuments.com',
+    clientId: 'AP-9L3NZFJO',
+    clientSecret: 'iJ5RGF9eXXr86CFzl5kGbqEfT2RUIZf7GhXI8eHld1Km4gPY',
     accessToken: '',
+    refreshToken: '',
+    tokenExpiry: null,
     isConfigured: false
   };
   
-  // Try to get from sessionStorage first (temporary for testing)
-  const storedConfig = sessionStorage.getItem('netdocs-config');
-  if (storedConfig) {
+  // Try to get existing tokens from sessionStorage
+  const storedTokens = sessionStorage.getItem('netdocs-tokens');
+  if (storedTokens) {
     try {
-      const parsed = JSON.parse(storedConfig);
-      config.baseUrl = parsed.baseUrl;
-      config.accessToken = parsed.accessToken;
-      config.isConfigured = !!(config.baseUrl && config.accessToken);
+      const tokens = JSON.parse(storedTokens);
+      config.accessToken = tokens.accessToken;
+      config.refreshToken = tokens.refreshToken;
+      config.tokenExpiry = tokens.tokenExpiry ? new Date(tokens.tokenExpiry) : null;
+      
+      // Check if token is still valid (with 5 minute buffer)
+      const now = new Date();
+      const expiryBuffer = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes from now
+      
+      if (config.tokenExpiry && config.tokenExpiry > expiryBuffer) {
+        config.isConfigured = true;
+      } else {
+        window.logDebug('NetDocuments token expired or expiring soon', { 
+          expiry: config.tokenExpiry,
+          now: now
+        });
+      }
     } catch (e) {
-      window.logDebug('Failed to parse stored NetDocuments config', { error: e.message });
+      window.logDebug('Failed to parse stored NetDocuments tokens', { error: e.message });
     }
   }
   
-  // Default to EU region if no base URL configured
-  if (!config.baseUrl) {
-    config.baseUrl = 'https://api.eu.netdocuments.com';
-  }
-  
-  window.logDebug('NetDocuments config loaded', { 
-    hasBaseUrl: !!config.baseUrl,
+  window.logDebug('NetDocuments OAuth config loaded', { 
     hasAccessToken: !!config.accessToken,
+    hasRefreshToken: !!config.refreshToken,
+    tokenExpiry: config.tokenExpiry,
     isConfigured: config.isConfigured
   });
   
@@ -1778,7 +1891,7 @@ function showNetDocumentsConfigPrompt(container, properties) {
   configSeparator.style.fontWeight = 'bold';
   configSeparator.style.borderTop = '1px solid #ccc';
   configSeparator.style.paddingTop = '8px';
-  configSeparator.textContent = 'NetDocuments API Configuration Required';
+  configSeparator.textContent = 'NetDocuments OAuth Authentication Required';
   container.appendChild(configSeparator);
   
   const configForm = document.createElement('div');
@@ -1788,75 +1901,65 @@ function showNetDocumentsConfigPrompt(container, properties) {
   configForm.style.borderRadius = '4px';
   configForm.style.marginBottom = '10px';
   
-  // Base URL input
-  const urlLabel = document.createElement('div');
-  urlLabel.style.fontWeight = 'bold';
-  urlLabel.style.marginBottom = '5px';
-  urlLabel.textContent = 'NetDocuments API Base URL:';
-  configForm.appendChild(urlLabel);
+  // OAuth Information Display
+  const oauthInfo = document.createElement('div');
+  oauthInfo.style.marginBottom = '15px';
+  oauthInfo.innerHTML = '<strong>NetDocuments OAuth Configuration:</strong><br>' +
+                       'Client ID: AP-9L3NZFJO<br>' +
+                       'OAuth Server: eu.netdocuments.com<br>' +
+                       'API Server: api.eu.netdocuments.com';
+  configForm.appendChild(oauthInfo);
   
-  const urlInput = document.createElement('input');
-  urlInput.type = 'text';
-  urlInput.placeholder = 'https://api.eu.netdocuments.com';
-  urlInput.value = 'https://api.eu.netdocuments.com';
-  urlInput.style.width = '100%';
-  urlInput.style.padding = '5px';
-  urlInput.style.marginBottom = '10px';
-  urlInput.style.borderRadius = '3px';
-  urlInput.style.border = '1px solid #ccc';
-  configForm.appendChild(urlInput);
+  // Username input
+  const usernameLabel = document.createElement('div');
+  usernameLabel.style.fontWeight = 'bold';
+  usernameLabel.style.marginBottom = '5px';
+  usernameLabel.textContent = 'NetDocuments Username:';
+  configForm.appendChild(usernameLabel);
   
-  // Access Token input
-  const tokenLabel = document.createElement('div');
-  tokenLabel.style.fontWeight = 'bold';
-  tokenLabel.style.marginBottom = '5px';
-  tokenLabel.textContent = 'Access Token:';
-  configForm.appendChild(tokenLabel);
+  const usernameInput = document.createElement('input');
+  usernameInput.type = 'text';
+  usernameInput.placeholder = 'your.name@company.com';
+  usernameInput.style.width = '100%';
+  usernameInput.style.padding = '5px';
+  usernameInput.style.marginBottom = '10px';
+  usernameInput.style.borderRadius = '3px';
+  usernameInput.style.border = '1px solid #ccc';
+  configForm.appendChild(usernameInput);
   
-  const tokenInput = document.createElement('input');
-  tokenInput.type = 'password';
-  tokenInput.placeholder = 'Enter your NetDocuments access token';
-  tokenInput.style.width = '100%';
-  tokenInput.style.padding = '5px';
-  tokenInput.style.marginBottom = '10px';
-  tokenInput.style.borderRadius = '3px';
-  tokenInput.style.border = '1px solid #ccc';
-  configForm.appendChild(tokenInput);
+  // Password input
+  const passwordLabel = document.createElement('div');
+  passwordLabel.style.fontWeight = 'bold';
+  passwordLabel.style.marginBottom = '5px';
+  passwordLabel.textContent = 'NetDocuments Password:';
+  configForm.appendChild(passwordLabel);
   
-  // Save Configuration Button
-  const saveButton = document.createElement('button');
-  saveButton.textContent = 'Save Configuration';
-  saveButton.style.padding = '8px 16px';
-  saveButton.style.backgroundColor = '#007acc';
-  saveButton.style.color = 'white';
-  saveButton.style.border = 'none';
-  saveButton.style.borderRadius = '4px';
-  saveButton.style.cursor = 'pointer';
-  saveButton.style.marginRight = '10px';
-  saveButton.onclick = () => {
-    const config = {
-      baseUrl: urlInput.value.trim(),
-      accessToken: tokenInput.value.trim()
-    };
-    
-    if (config.baseUrl && config.accessToken) {
-      sessionStorage.setItem('netdocs-config', JSON.stringify(config));
-      window.logDebug('NetDocuments configuration saved', { baseUrl: config.baseUrl });
-      
-      container.innerHTML = '<div style="color: #666; font-style: italic;">Configuration saved. You can now test the API connection.</div>';
-      
-      setTimeout(() => {
-        testNetDocumentsAPI(properties);
-      }, 1000);
-    } else {
-      alert('Please provide both Base URL and Access Token');
-    }
-  };
-  configForm.appendChild(saveButton);
+  const passwordInput = document.createElement('input');
+  passwordInput.type = 'password';
+  passwordInput.placeholder = 'Enter your NetDocuments password';
+  passwordInput.style.width = '100%';
+  passwordInput.style.padding = '5px';
+  passwordInput.style.marginBottom = '10px';
+  passwordInput.style.borderRadius = '3px';
+  passwordInput.style.border = '1px solid #ccc';
+  configForm.appendChild(passwordInput);
+  
+  // Authenticate Button
+  const authButton = document.createElement('button');
+  authButton.textContent = 'Authenticate with NetDocuments';
+  authButton.style.padding = '8px 16px';
+  authButton.style.backgroundColor = '#007acc';
+  authButton.style.color = 'white';
+  authButton.style.border = 'none';
+  authButton.style.borderRadius = '4px';
+  authButton.style.cursor = 'pointer';
+  authButton.style.marginRight = '10px';
+  authButton.onclick = () => authenticateNetDocuments(usernameInput.value, passwordInput.value, container, properties);
+  configForm.appendChild(authButton);
   
   container.appendChild(configForm);
   
-  // Configuration Instructions
+  // OAuth Instructions
   const instructions = document.createElement('div');
   instructions.style.marginTop = '10px';
   instructions.style.padding = '10px';
@@ -1864,12 +1967,135 @@ function showNetDocumentsConfigPrompt(container, properties) {
   instructions.style.border = '1px solid #d6d8db';
   instructions.style.borderRadius = '4px';
   instructions.style.fontSize = '11px';
-  instructions.innerHTML = '<strong>Configuration Instructions:</strong><br>' +
-                          '1. Obtain an access token from your NetDocuments administrator<br>' +
-                          '2. Choose the appropriate API base URL for your region<br>' +
-                          '3. Ensure CORS is configured to allow requests from this domain<br>' +
-                          '4. Access tokens are stored temporarily in browser session storage';
+  instructions.innerHTML = '<strong>OAuth Authentication Instructions:</strong><br>' +
+                          '1. Enter your NetDocuments username and password<br>' +
+                          '2. The add-in will use OAuth 2.0 Resource Owner Password Credentials flow<br>' +
+                          '3. Access tokens are stored temporarily in browser session storage<br>' +
+                          '4. Tokens will be automatically refreshed when needed';
   container.appendChild(instructions);
+}
+
+async function authenticateNetDocuments(username, password, container, properties) {
+  if (!username || !password) {
+    alert('Please provide both username and password');
+    return;
+  }
+  
+  container.innerHTML = '<div style="color: #666; font-style: italic;">Authenticating with NetDocuments...</div>';
+  
+  try {
+    const config = getNetDocumentsConfig();
+    
+    // OAuth 2.0 Resource Owner Password Credentials Grant
+    const tokenEndpoint = `${config.oauthUrl}/v2/oauth2/token`;
+    
+    const tokenRequest = {
+      grant_type: 'password',
+      username: username,
+      password: password,
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      scope: 'read write'
+    };
+    
+    window.logDebug('Requesting NetDocuments OAuth token', { 
+      endpoint: tokenEndpoint,
+      username: username,
+      clientId: config.clientId
+    });
+    
+    const response = await fetch(tokenEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json'
+      },
+      body: new URLSearchParams(tokenRequest)
+    });
+    
+    window.logDebug('NetDocuments OAuth response received', { 
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    });
+    
+    if (response.ok) {
+      const tokenData = await response.json();
+      window.logDebug('NetDocuments OAuth successful', { 
+        hasAccessToken: !!tokenData.access_token,
+        hasRefreshToken: !!tokenData.refresh_token,
+        expiresIn: tokenData.expires_in
+      });
+      
+      // Calculate token expiry
+      const expiryTime = new Date();
+      expiryTime.setSeconds(expiryTime.getSeconds() + (tokenData.expires_in || 3600));
+      
+      // Store tokens securely
+      const tokens = {
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token,
+        tokenExpiry: expiryTime.toISOString()
+      };
+      
+      sessionStorage.setItem('netdocs-tokens', JSON.stringify(tokens));
+      
+      container.innerHTML = '';
+      container.appendChild(createInfoRow('Authentication Status', 'Success'));
+      container.appendChild(createInfoRow('Token Type', tokenData.token_type || 'Bearer'));
+      container.appendChild(createInfoRow('Expires In', `${tokenData.expires_in || 3600} seconds`));
+      container.appendChild(createInfoRow('Token Expiry', expiryTime.toLocaleString()));
+      
+      const successNote = document.createElement('div');
+      successNote.style.marginTop = '10px';
+      successNote.style.padding = '8px';
+      successNote.style.backgroundColor = '#d4edda';
+      successNote.style.border = '1px solid #c3e6cb';
+      successNote.style.borderRadius = '4px';
+      successNote.style.fontSize = '11px';
+      successNote.style.color = '#155724';
+      successNote.textContent = 'NetDocuments OAuth authentication successful! You can now test the API connection.';
+      container.appendChild(successNote);
+      
+      // Automatically test API connection after successful authentication
+      setTimeout(() => {
+        testNetDocumentsAPI(properties);
+      }, 2000);
+      
+    } else {
+      const errorText = await response.text();
+      window.logDebug('NetDocuments OAuth failed', { 
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
+      
+      container.innerHTML = '';
+      container.appendChild(createInfoRow('Authentication Status', 'Failed'));
+      container.appendChild(createInfoRow('Response Status', `${response.status} ${response.statusText}`));
+      container.appendChild(createInfoRow('Error Details', errorText || 'Authentication failed'));
+      
+      displayNetDocumentsError(container, response.status, errorText);
+    }
+    
+  } catch (error) {
+    window.logDebug('NetDocuments OAuth authentication failed', { error: error.message });
+    container.innerHTML = '';
+    displaySafeError(container, `Authentication failed: ${error.message}`);
+    
+    if (error.message.includes('fetch')) {
+      const networkNote = document.createElement('div');
+      networkNote.style.marginTop = '10px';
+      networkNote.style.padding = '8px';
+      networkNote.style.backgroundColor = '#f8d7da';
+      networkNote.style.border = '1px solid #f5c6cb';
+      networkNote.style.borderRadius = '4px';
+      networkNote.style.fontSize = '11px';
+      networkNote.style.color = '#721c24';
+      networkNote.textContent = 'Network error: Check CORS settings and ensure NetDocuments OAuth endpoints are accessible.';
+      container.appendChild(networkNote);
+    }
+  }
 }
 
 function displayNetDocumentsError(container, statusCode, errorText) {

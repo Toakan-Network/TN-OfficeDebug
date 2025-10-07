@@ -1883,265 +1883,136 @@ function getNetDocumentsConfig() {
 }
 
 function showNetDocumentsConfigPrompt(container, properties) {
+  window.logDebug('Showing NetDocuments authentication information');
+  
   container.innerHTML = '';
   
-  const configSeparator = document.createElement('div');
-  configSeparator.style.marginTop = '10px';
-  configSeparator.style.marginBottom = '15px';
-  configSeparator.style.fontWeight = 'bold';
-  configSeparator.style.borderTop = '1px solid #ccc';
-  configSeparator.style.paddingTop = '8px';
-  configSeparator.textContent = 'NetDocuments OAuth Authentication Required';
-  container.appendChild(configSeparator);
+  // Create information section
+  const infoSeparator = document.createElement('div');
+  infoSeparator.style.marginTop = '10px';
+  infoSeparator.style.marginBottom = '15px';
+  infoSeparator.style.fontWeight = 'bold';
+  infoSeparator.style.borderTop = '1px solid #ccc';
+  infoSeparator.style.paddingTop = '10px';
+  infoSeparator.textContent = 'NetDocuments Authentication Required';
+  container.appendChild(infoSeparator);
   
-  const configForm = document.createElement('div');
-  configForm.style.padding = '15px';
-  configForm.style.backgroundColor = '#f8f9fa';
-  configForm.style.border = '1px solid #dee2e6';
-  configForm.style.borderRadius = '4px';
-  configForm.style.marginBottom = '10px';
+  // Security notice
+  const securityNotice = document.createElement('div');
+  securityNotice.style.marginBottom = '15px';
+  securityNotice.style.padding = '12px';
+  securityNotice.style.backgroundColor = '#fff3cd';
+  securityNotice.style.border = '1px solid #ffeaa7';
+  securityNotice.style.borderRadius = '4px';
+  securityNotice.style.fontSize = '12px';
+  securityNotice.style.color = '#856404';
+  securityNotice.innerHTML = `
+    <strong>🔒 Security Notice:</strong><br>
+    For production use, NetDocuments authentication should be implemented using:<br>
+    • Office Dialog API for secure OAuth authorization code flow<br>
+    • Server-side proxy to handle API calls and avoid CORS restrictions<br>
+    • Secure token storage on the server side
+  `;
+  container.appendChild(securityNotice);
   
-  // OAuth Information Display
-  const oauthInfo = document.createElement('div');
-  oauthInfo.style.marginBottom = '15px';
-  oauthInfo.innerHTML = '<strong>NetDocuments OAuth Configuration:</strong><br>' +
-                       'Client ID: AP-9L3NZFJO<br>' +
-                       'OAuth Server: eu.netdocuments.com<br>' +
-                       'API Server: api.eu.netdocuments.com';
-  configForm.appendChild(oauthInfo);
+  // Current limitations
+  const limitationsSection = document.createElement('div');
+  limitationsSection.style.marginBottom = '15px';
+  limitationsSection.style.padding = '12px';
+  limitationsSection.style.backgroundColor = '#f8d7da';
+  limitationsSection.style.border = '1px solid #f5c6cb';
+  limitationsSection.style.borderRadius = '4px';
+  limitationsSection.style.fontSize = '12px';
+  limitationsSection.style.color = '#721c24';
+  limitationsSection.innerHTML = `
+    <strong>⚠️ Current Limitations:</strong><br>
+    • CORS policies prevent direct OAuth calls from Office add-ins<br>
+    • Resource Owner Password Credentials flow is not secure for this context<br>
+    • NetDocuments API requires proper authentication infrastructure
+  `;
+  container.appendChild(limitationsSection);
   
-  // Username input
-  const usernameLabel = document.createElement('div');
-  usernameLabel.style.fontWeight = 'bold';
-  usernameLabel.style.marginBottom = '5px';
-  usernameLabel.textContent = 'NetDocuments Username:';
-  configForm.appendChild(usernameLabel);
+  // Document information we can show
+  container.appendChild(createInfoRow('Detected Document System', 'NetDocuments'));
+  container.appendChild(createInfoRow('Document ID Property', 'ndDocumentId'));
+  container.appendChild(createInfoRow('Document ID Value', properties.ndDocumentId || 'Not found'));
+  container.appendChild(createInfoRow('API Client ID', 'AP-9L3NZFJO (configured)'));
+  container.appendChild(createInfoRow('API Base URL', 'https://api.eu.netdocuments.com'));
+  container.appendChild(createInfoRow('OAuth URL', 'https://eu.netdocuments.com'));
   
-  const usernameInput = document.createElement('input');
-  usernameInput.type = 'text';
-  usernameInput.placeholder = 'your.name@company.com';
-  usernameInput.style.width = '100%';
-  usernameInput.style.padding = '5px';
-  usernameInput.style.marginBottom = '10px';
-  usernameInput.style.borderRadius = '3px';
-  usernameInput.style.border = '1px solid #ccc';
-  configForm.appendChild(usernameInput);
+  // Recommended implementation approach
+  const implementationSection = document.createElement('div');
+  implementationSection.style.marginTop = '15px';
+  implementationSection.style.marginBottom = '10px';
+  implementationSection.style.fontWeight = 'bold';
+  implementationSection.style.borderTop = '1px solid #ccc';
+  implementationSection.style.paddingTop = '8px';
+  implementationSection.textContent = 'Recommended Implementation for Production';
+  container.appendChild(implementationSection);
   
-  // Password input
-  const passwordLabel = document.createElement('div');
-  passwordLabel.style.fontWeight = 'bold';
-  passwordLabel.style.marginBottom = '5px';
-  passwordLabel.textContent = 'NetDocuments Password:';
-  configForm.appendChild(passwordLabel);
+  const recommendations = [
+    'Use Office.context.ui.displayDialogAsync() for OAuth authorization code flow',
+    'Implement server-side API proxy to handle NetDocuments REST calls',
+    'Store tokens securely on server side, not in browser storage',
+    'Configure CORS properly on your API proxy server',
+    'Use HTTPS for all authentication flows and API communications'
+  ];
   
-  const passwordInput = document.createElement('input');
-  passwordInput.type = 'password';
-  passwordInput.placeholder = 'Enter your NetDocuments password';
-  passwordInput.style.width = '100%';
-  passwordInput.style.padding = '5px';
-  passwordInput.style.marginBottom = '10px';
-  passwordInput.style.borderRadius = '3px';
-  passwordInput.style.border = '1px solid #ccc';
-  configForm.appendChild(passwordInput);
+  recommendations.forEach((rec, index) => {
+    const recRow = document.createElement('div');
+    recRow.style.margin = '5px 0';
+    recRow.style.padding = '8px';
+    recRow.style.backgroundColor = '#d1ecf1';
+    recRow.style.border = '1px solid #bee5eb';
+    recRow.style.borderRadius = '4px';
+    recRow.style.fontSize = '11px';
+    recRow.style.color = '#0c5460';
+    recRow.textContent = `${index + 1}. ${rec}`;
+    container.appendChild(recRow);
+  });
   
-  // Authenticate Button
-  const authButton = document.createElement('button');
-  authButton.textContent = 'Authenticate with NetDocuments';
-  authButton.style.padding = '8px 16px';
-  authButton.style.backgroundColor = '#007acc';
-  authButton.style.color = 'white';
-  authButton.style.border = 'none';
-  authButton.style.borderRadius = '4px';
-  authButton.style.cursor = 'pointer';
-  authButton.style.marginRight = '10px';
-  authButton.onclick = () => authenticateNetDocuments(usernameInput.value, passwordInput.value, container, properties);
-  configForm.appendChild(authButton);
-  
-  container.appendChild(configForm);
-  
-  // OAuth Instructions
-  const instructions = document.createElement('div');
-  instructions.style.marginTop = '10px';
-  instructions.style.padding = '10px';
-  instructions.style.backgroundColor = '#e2e3e5';
-  instructions.style.border = '1px solid #d6d8db';
-  instructions.style.borderRadius = '4px';
-  instructions.style.fontSize = '11px';
-  instructions.innerHTML = '<strong>OAuth Authentication Instructions:</strong><br>' +
-                          '1. Enter your NetDocuments username and password<br>' +
-                          '2. The add-in will use OAuth 2.0 Resource Owner Password Credentials flow<br>' +
-                          '3. Access tokens are stored temporarily in browser session storage<br>' +
-                          '4. Tokens will be automatically refreshed when needed';
-  container.appendChild(instructions);
+  // Note about current status
+  const statusNote = document.createElement('div');
+  statusNote.style.marginTop = '15px';
+  statusNote.style.padding = '10px';
+  statusNote.style.backgroundColor = '#e2e3e5';
+  statusNote.style.border = '1px solid #d6d8db';
+  statusNote.style.borderRadius = '4px';
+  statusNote.style.fontSize = '11px';
+  statusNote.style.color = '#383d41';
+  statusNote.innerHTML = `
+    <strong>📋 Current Status:</strong><br>
+    This implementation demonstrates NetDocuments detection and shows the proper architecture needed for secure API integration. 
+    The actual API calls require a server-side implementation to handle authentication and avoid CORS restrictions.
+  `;
+  container.appendChild(statusNote);
 }
+  
+// Previous insecure authentication functions removed for security reasons
+// See showNetDocumentsConfigPrompt() for proper implementation guidance
 
-async function authenticateNetDocuments(username, password, container, properties) {
-  if (!username || !password) {
-    alert('Please provide both username and password');
-    return;
-  }
+// Updated configuration function with security improvements
+function getNetDocumentsConfig() {
+  // For Office Add-ins, secure authentication requires:
+  // 1. Dialog API for OAuth authorization code flow (most secure)
+  // 2. Server-side proxy for API calls (avoids CORS)
+  // 3. Pre-configured API keys for read-only operations (if available)
   
-  container.innerHTML = '<div style="color: #666; font-style: italic;">Authenticating with NetDocuments...</div>';
+  const config = {
+    // Development/Testing configuration
+    baseUrl: 'https://api.eu.netdocuments.com',
+    oauthUrl: 'https://eu.netdocuments.com',
+    clientId: 'AP-9L3NZFJO',
+    
+    // Note: In production, authentication should use:
+    // - Office Dialog API for secure OAuth flow
+    // - Server-side proxy to handle API calls and avoid CORS
+    // - Token storage in secure, server-side session storage
+    
+    isConfigured: false,
+    accessToken: '',
+    authMethod: 'demonstration-only' // Indicates this is not production-ready
+  };
   
-  try {
-    const config = getNetDocumentsConfig();
-    
-    // OAuth 2.0 Resource Owner Password Credentials Grant
-    const tokenEndpoint = `${config.oauthUrl}/v2/oauth2/token`;
-    
-    const tokenRequest = {
-      grant_type: 'password',
-      username: username,
-      password: password,
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-      scope: 'read write'
-    };
-    
-    window.logDebug('Requesting NetDocuments OAuth token', { 
-      endpoint: tokenEndpoint,
-      username: username,
-      clientId: config.clientId
-    });
-    
-    const response = await fetch(tokenEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json'
-      },
-      body: new URLSearchParams(tokenRequest)
-    });
-    
-    window.logDebug('NetDocuments OAuth response received', { 
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok
-    });
-    
-    if (response.ok) {
-      const tokenData = await response.json();
-      window.logDebug('NetDocuments OAuth successful', { 
-        hasAccessToken: !!tokenData.access_token,
-        hasRefreshToken: !!tokenData.refresh_token,
-        expiresIn: tokenData.expires_in
-      });
-      
-      // Calculate token expiry
-      const expiryTime = new Date();
-      expiryTime.setSeconds(expiryTime.getSeconds() + (tokenData.expires_in || 3600));
-      
-      // Store tokens securely
-      const tokens = {
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token,
-        tokenExpiry: expiryTime.toISOString()
-      };
-      
-      sessionStorage.setItem('netdocs-tokens', JSON.stringify(tokens));
-      
-      container.innerHTML = '';
-      container.appendChild(createInfoRow('Authentication Status', 'Success'));
-      container.appendChild(createInfoRow('Token Type', tokenData.token_type || 'Bearer'));
-      container.appendChild(createInfoRow('Expires In', `${tokenData.expires_in || 3600} seconds`));
-      container.appendChild(createInfoRow('Token Expiry', expiryTime.toLocaleString()));
-      
-      const successNote = document.createElement('div');
-      successNote.style.marginTop = '10px';
-      successNote.style.padding = '8px';
-      successNote.style.backgroundColor = '#d4edda';
-      successNote.style.border = '1px solid #c3e6cb';
-      successNote.style.borderRadius = '4px';
-      successNote.style.fontSize = '11px';
-      successNote.style.color = '#155724';
-      successNote.textContent = 'NetDocuments OAuth authentication successful! You can now test the API connection.';
-      container.appendChild(successNote);
-      
-      // Automatically test API connection after successful authentication
-      setTimeout(() => {
-        testNetDocumentsAPI(properties);
-      }, 2000);
-      
-    } else {
-      const errorText = await response.text();
-      window.logDebug('NetDocuments OAuth failed', { 
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText
-      });
-      
-      container.innerHTML = '';
-      container.appendChild(createInfoRow('Authentication Status', 'Failed'));
-      container.appendChild(createInfoRow('Response Status', `${response.status} ${response.statusText}`));
-      container.appendChild(createInfoRow('Error Details', errorText || 'Authentication failed'));
-      
-      displayNetDocumentsError(container, response.status, errorText);
-    }
-    
-  } catch (error) {
-    window.logDebug('NetDocuments OAuth authentication failed', { error: error.message });
-    container.innerHTML = '';
-    displaySafeError(container, `Authentication failed: ${error.message}`);
-    
-    if (error.message.includes('fetch')) {
-      const networkNote = document.createElement('div');
-      networkNote.style.marginTop = '10px';
-      networkNote.style.padding = '8px';
-      networkNote.style.backgroundColor = '#f8d7da';
-      networkNote.style.border = '1px solid #f5c6cb';
-      networkNote.style.borderRadius = '4px';
-      networkNote.style.fontSize = '11px';
-      networkNote.style.color = '#721c24';
-      networkNote.textContent = 'Network error: Check CORS settings and ensure NetDocuments OAuth endpoints are accessible.';
-      container.appendChild(networkNote);
-    }
-  }
-}
-
-function displayNetDocumentsError(container, statusCode, errorText) {
-  const errorSeparator = document.createElement('div');
-  errorSeparator.style.marginTop = '15px';
-  errorSeparator.style.marginBottom = '10px';
-  errorSeparator.style.fontWeight = 'bold';
-  errorSeparator.style.borderTop = '1px solid #ccc';
-  errorSeparator.style.paddingTop = '8px';
-  errorSeparator.textContent = 'Error Details';
-  container.appendChild(errorSeparator);
-  
-  let errorMessage = 'Unknown error occurred';
-  let suggestion = 'Please check your configuration and try again';
-  
-  switch (statusCode) {
-    case 401:
-      errorMessage = 'Authentication failed';
-      suggestion = 'Check your access token and ensure it has not expired';
-      break;
-    case 403:
-      errorMessage = 'Access forbidden';
-      suggestion = 'Your account may not have permission to access this document or API endpoint';
-      break;
-    case 404:
-      errorMessage = 'Document or endpoint not found';
-      suggestion = 'Verify the document ID and API base URL are correct';
-      break;
-    case 429:
-      errorMessage = 'Rate limit exceeded';
-      suggestion = 'Too many requests. Please wait before trying again';
-      break;
-    case 500:
-      errorMessage = 'NetDocuments server error';
-      suggestion = 'There may be a temporary issue with the NetDocuments service';
-      break;
-  }
-  
-  const errorNote = document.createElement('div');
-  errorNote.style.marginTop = '10px';
-  errorNote.style.padding = '10px';
-  errorNote.style.backgroundColor = '#f8d7da';
-  errorNote.style.border = '1px solid #f5c6cb';
-  errorNote.style.borderRadius = '4px';
-  errorNote.style.fontSize = '11px';
-  errorNote.style.color = '#721c24';
-  errorNote.innerHTML = `<strong>${errorMessage}</strong><br>${suggestion}`;
-  container.appendChild(errorNote);
+  return config;
 }

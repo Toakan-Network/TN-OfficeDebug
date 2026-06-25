@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+  <Id>a1b2c3d4-5e6f-7a8b-9c0d-e1f2a3b4c5d6</Id>
+  <Version>0.3.2</Version>
+  <ProviderName>Toakan Network</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Document Tools"/>
+  <Description DefaultValue="Document Info, Configure, and Quick Apply for Word via Office.js"/>
+  <IconUrl DefaultValue="https://tools.bighand.services/office-debug/assets/gears.png"/>
+  <HighResolutionIconUrl DefaultValue="https://tools.bighand.services/office-debug/assets/gears.png"/>
+  <SupportUrl DefaultValue="https://github.com/Toakan-Network/TN-OfficeDebug"/>
+  <AppDomains>
+    <AppDomain>https://tools.bighand.services</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Document"/>
+  </Hosts>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://tools.bighand.services/style-manager/src/taskpane.html?v=0.3.1"/>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="GetStarted.LearnMoreUrl"/>
+          </GetStarted>
+          <FunctionFile resid="QuickApply.Url"/>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="BigHandTab">
+              <Label resid="CustomTab.Label"/>
+              <!-- Group 1: Apply (large standalone button) -->
+              <Group id="ApplyGroup">
+                <Label resid="ApplyGroup.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16"/>
+                  <bt:Image size="32" resid="Icon.32x32"/>
+                  <bt:Image size="80" resid="Icon.80x80"/>
+                </Icon>
+                <Control xsi:type="Button" id="QuickApplyButton">
+                  <Label resid="QuickApplyButton.Label"/>
+                  <Supertip>
+                    <Title resid="QuickApplyButton.Label"/>
+                    <Description resid="QuickApplyButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16"/>
+                    <bt:Image size="32" resid="Icon.32x32"/>
+                    <bt:Image size="80" resid="Icon.80x80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>quickApplyStyles</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+              <!-- Group 2: Manage (Document Info + Modify Styles) -->
+              <Group id="ManageGroup">
+                <Label resid="ManageGroup.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16"/>
+                  <bt:Image size="32" resid="Icon.32x32"/>
+                  <bt:Image size="80" resid="Icon.80x80"/>
+                </Icon>
+                <Control xsi:type="Button" id="TaskpaneButton">
+                  <Label resid="TaskpaneButton.Label"/>
+                  <Supertip>
+                    <Title resid="TaskpaneButton.Label"/>
+                    <Description resid="TaskpaneButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16"/>
+                    <bt:Image size="32" resid="Icon.32x32"/>
+                    <bt:Image size="80" resid="Icon.80x80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>StyleManagerPane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+                <Control xsi:type="Button" id="NumberingButton">
+                  <Label resid="NumberingButton.Label"/>
+                  <Supertip>
+                    <Title resid="NumberingButton.Label"/>
+                    <Description resid="NumberingButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16"/>
+                    <bt:Image size="32" resid="Icon.32x32"/>
+                    <bt:Image size="80" resid="Icon.80x80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>NumberingManagerPane</TaskpaneId>
+                    <SourceLocation resid="Numbering.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+              <!-- Group 3: Development (TOC) -->
+              <Group id="DevelopmentGroup">
+                <Label resid="DevelopmentGroup.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16"/>
+                  <bt:Image size="32" resid="Icon.32x32"/>
+                  <bt:Image size="80" resid="Icon.80x80"/>
+                </Icon>
+                <Control xsi:type="Button" id="TocButton">
+                  <Label resid="TocButton.Label"/>
+                  <Supertip>
+                    <Title resid="TocButton.Label"/>
+                    <Description resid="TocButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16"/>
+                    <bt:Image size="32" resid="Icon.32x32"/>
+                    <bt:Image size="80" resid="Icon.80x80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>TocPane</TaskpaneId>
+                    <SourceLocation resid="Toc.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16x16" DefaultValue="https://tools.bighand.services/office-debug/assets/gears.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://tools.bighand.services/office-debug/assets/gears.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://tools.bighand.services/office-debug/assets/gears.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://github.com/Toakan-Network/TN-OfficeDebug"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://tools.bighand.services/style-manager/src/taskpane.html?v=0.3.2"/>
+        <bt:Url id="Numbering.Url" DefaultValue="https://tools.bighand.services/style-manager/src/numbering.html?v=0.3.2"/>
+        <bt:Url id="QuickApply.Url" DefaultValue="https://tools.bighand.services/style-manager/src/quick-apply.html?v=0.3.2"/>
+        <bt:Url id="Toc.Url" DefaultValue="https://tools.bighand.services/style-manager/src/toc.html?v=0.3.2"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="Document Tools"/>
+        <bt:String id="CustomTab.Label" DefaultValue="BigHand"/>
+        <bt:String id="ApplyGroup.Label" DefaultValue="Apply"/>
+        <bt:String id="ManageGroup.Label" DefaultValue="Manage"/>
+        <bt:String id="DevelopmentGroup.Label" DefaultValue="Development"/>
+        <bt:String id="TaskpaneButton.Label" DefaultValue="Document Info"/>
+        <bt:String id="NumberingButton.Label" DefaultValue="Modify Styles"/>
+        <bt:String id="TocButton.Label" DefaultValue="Table of Contents"/>
+        <bt:String id="QuickApplyButton.Label" DefaultValue="Apply Styles"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Manage document styles and numbering in Word"/>
+        <bt:String id="TaskpaneButton.Tooltip" DefaultValue="View document style info, audit styles, and scan numbering (read-only)"/>
+        <bt:String id="NumberingButton.Tooltip" DefaultValue="Modify styles, numbering schemes, and manage style packs (admin)"/>
+        <bt:String id="TocButton.Tooltip" DefaultValue="Generate a Table of Contents from document headings"/>
+        <bt:String id="QuickApplyButton.Tooltip" DefaultValue="One-click: apply your organisation's assigned style pack to this document"/>
+      </bt:LongStrings>
+    </Resources>
+    <WebApplicationInfo>
+      <Id>16e575f5-899b-48b0-9fb1-d8c124350122</Id>
+      <Resource>api://tools.bighand.services/16e575f5-899b-48b0-9fb1-d8c124350122</Resource>
+      <Scopes>
+        <Scope>openid</Scope>
+        <Scope>profile</Scope>
+      </Scopes>
+    </WebApplicationInfo>
+  </VersionOverrides>
+</OfficeApp>

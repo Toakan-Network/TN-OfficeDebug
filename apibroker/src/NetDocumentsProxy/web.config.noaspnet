@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <system.webServer>
+    <defaultDocument>
+      <files>
+        <clear />
+        <add value="NetDocumentsProxy.exe" />
+      </files>
+    </defaultDocument>
+    <staticContent>
+      <mimeMap fileExtension=".exe" mimeType="application/octet-stream" />
+    </staticContent>
+  </system.webServer>
+</configuration>

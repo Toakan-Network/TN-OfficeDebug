@@ -71,6 +71,16 @@
                         </div>
                     </section>
                 </div>
+
+                <!-- Actions Tab Content -->
+                <div id="tab-actions" class="tab-content">
+                    <section class="info-section">
+                        <h2>Actions</h2>
+                        <div id="actions-info" class="info-content">
+                            <div class="loading">Loading actions...</div>
+                        </div>
+                    </section>
+                </div>
             </div>
 
             <!-- Tab Navigation -->
@@ -94,6 +104,10 @@
                 <button class="tab-button" data-tab="tab-dms">
                     <span class="tab-icon">📁</span>
                     <span class="tab-label">DMS</span>
+                </button>
+                <button class="tab-button" data-tab="tab-actions">
+                    <span class="tab-icon">⚡</span>
+                    <span class="tab-label">Actions</span>
                 </button>
             </div>
         </div>
@@ -185,6 +199,13 @@
         });
     </script>
     
+    <script src="helpers.js"></script>
+    <script src="office-info.js"></script>
+    <script src="document-info.js"></script>
+    <script src="system-info.js"></script>
+    <script src="addin-info.js"></script>
+    <script src="dms-info.js"></script>
+    <script src="actions.js"></script>
     <script src="taskpane.js"></script>
 </body>
 </html>

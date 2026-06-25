@@ -146,17 +146,14 @@ function loadWordDocumentInfo(container) {
             
             // Add type information as a small subtitle
             const typeSpan = document.createElement('div');
-            typeSpan.style.color = '#888';
-            typeSpan.style.fontSize = '10px';
-            typeSpan.style.fontStyle = 'italic';
-            typeSpan.style.marginTop = '2px';
+            typeSpan.className = 'info-meta';
             typeSpan.textContent = `Type: ${propType}`;
             
             const valueDiv = propRow.lastElementChild;
             valueDiv.appendChild(typeSpan);
             
             // Different border color for custom properties
-            propRow.style.borderLeftColor = '#28a745';
+            propRow.classList.add('custom-property');
             
             container.appendChild(propRow);
           });
@@ -218,7 +215,7 @@ function loadExcelDocumentInfo(container) {
         customProperties.items.forEach((customProp, index) => {
           try {
             const propRow = createInfoRow(customProp.key, customProp.value);
-            propRow.style.borderLeft = '4px solid #28a745';
+            propRow.classList.add('custom-property');
             container.appendChild(propRow);
           } catch (propError) {
             window.logDebug('Error displaying custom property', { 

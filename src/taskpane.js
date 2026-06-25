@@ -23,15 +23,32 @@ Office.onReady((info) => {
   console.error('ERROR: Office.onReady failed', error);
 });
 
-function loadAllDebugInfo() {
-  try {
-    loadOfficeInfo();
-    loadDocumentInfo();
-    loadAddinsInfo();
-    loadSystemInfo();
-    loadDMSInfo();
-    loadActions();
-  } catch (error) {
-    console.error('ERROR in loadAllDebugInfo', error);
+function loadDebugSection(sectionName, loadFn, containerId) {
+  if (typeof loadFn !== 'function') {
+    console.warn(`Skipping ${sectionName}: loader not available`);
+    return;
   }
+
+  try {
+    loadFn();
+  } catch (error) {
+    console.error(`ERROR in ${sectionName}`, error);
+
+    if (containerId) {
+      const container = document.getElementById(containerId);
+      if (container) {
+        container.innerHTML = '';
+        displaySafeError(container, `Error loading ${sectionName}: ${error.message}`);
+      }
+    }
+  }
+}
+
+function loadAllDebugInfo() {
+  loadDebugSection('Office info', loadOfficeInfo, 'office-info');
+  loadDebugSection('Document info', loadDocumentInfo, 'document-info');
+  loadDebugSection('Add-ins info', loadAddinsInfo, 'addins-info');
+  loadDebugSection('System info', loadSystemInfo, 'system-info');
+  loadDebugSection('DMS info', loadDMSInfo, 'dms-info');
+  loadDebugSection('Actions', loadActions, 'actions-info');
 }

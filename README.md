@@ -115,7 +115,7 @@ The add-in is built with:
 
 To modify the add-in:
 1. Edit the HTML/CSS/JS files as needed
-2. Update the manifest.xml if changing functionality
+2. Update the `config/manifest.xml` file if changing functionality
 3. Test using Office Online or Desktop sideloading
 
 ## Limitations

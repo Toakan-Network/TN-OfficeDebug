@@ -14,7 +14,7 @@
 2. Open Word Online
 3. Create a new blank document
 4. Click **Insert** → **Add-ins** → **Upload My Add-in**
-5. Upload the `manifest.xml` file from this repository
+5. Upload the `config/manifest.xml` file from this repository
 6. Click **Show Debug Info** in the ribbon (Home tab)
 7. View all diagnostic information in the task pane
 
@@ -23,7 +23,7 @@
    - For local testing: Use `python3 -m http.server 8080` or any local server
    - For production: Deploy to a web hosting service
    
-2. **Update manifest.xml**: Replace `~remoteAppUrl` with your server URL
+2. **Update `config/manifest.xml`**: Replace `~remoteAppUrl` with your server URL
    ```xml
    <SourceLocation DefaultValue="http://localhost:8080/taskpane.html"/>
    ```

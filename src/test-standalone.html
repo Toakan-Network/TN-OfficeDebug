@@ -71,6 +71,16 @@
                         </div>
                     </section>
                 </div>
+
+                <!-- Smoke Check Tab Content -->
+                <div id="tab-smoke" class="tab-content">
+                    <section class="info-section">
+                        <h2>Standalone Smoke Check</h2>
+                        <div id="context-info" class="info-content">
+                            <div class="loading">Running smoke checks...</div>
+                        </div>
+                    </section>
+                </div>
             </div>
 
             <!-- Tab Navigation -->
@@ -90,6 +100,10 @@
                 <button class="tab-button" data-tab="tab-addins">
                     <span class="tab-icon">🧩</span>
                     <span class="tab-label">Add-in Info</span>
+                </button>
+                <button class="tab-button" data-tab="tab-smoke">
+                    <span class="tab-icon">✅</span>
+                    <span class="tab-label">Smoke Check</span>
                 </button>
             </div>
         </div>
@@ -177,6 +191,15 @@
                     documentLocation: window.location.href,
                     documentTitle: document.title
                 };
+
+                const smokeChecks = [
+                    ['Office.js loaded', typeof Office !== 'undefined' ? 'Pass' : 'Fail'],
+                    ['Office info container present', document.getElementById('office-info') ? 'Pass' : 'Fail'],
+                    ['Document info container present', document.getElementById('document-info') ? 'Pass' : 'Fail'],
+                    ['System info container present', document.getElementById('system-info') ? 'Pass' : 'Fail'],
+                    ['Add-ins info container present', document.getElementById('addins-info') ? 'Pass' : 'Fail'],
+                    ['Smoke check container present', document.getElementById('context-info') ? 'Pass' : 'Fail']
+                ];
                 
                 // Create formatted JSON display
                 const jsonDiv = document.createElement('div');
@@ -190,6 +213,16 @@
                 
                 container.appendChild(label);
                 container.appendChild(jsonDiv);
+
+                const checksLabel = document.createElement('div');
+                checksLabel.style.margin = '16px 0 10px';
+                checksLabel.style.fontWeight = '600';
+                checksLabel.textContent = 'Smoke Checks:';
+                container.appendChild(checksLabel);
+
+                smokeChecks.forEach(([name, result]) => {
+                    container.appendChild(createInfoRow(name, result));
+                });
                 
             } catch (error) {
                 container.innerHTML = `<div class="error">Error loading context info: ${error.message}</div>`;

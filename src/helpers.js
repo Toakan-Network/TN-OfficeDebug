@@ -10,41 +10,25 @@ window.logDebug = function(message, data = null) {
 };
 
 function createInfoRow(label, value, isCode = false) {
-  // Create a card-style container for better layout
   const container = document.createElement('div');
-  container.style.marginBottom = '8px';
-  container.style.padding = '6px';
-  container.style.backgroundColor = '#f9f9f9';
-  container.style.borderRadius = '4px';
-  container.style.borderLeft = '3px solid #667eea';
-  
+  container.className = 'info-row';
+
   const labelDiv = document.createElement('div');
-  labelDiv.style.fontWeight = '600';
-  labelDiv.style.color = '#555';
-  labelDiv.style.fontSize = '11px';
-  labelDiv.style.marginBottom = '2px';
-  labelDiv.style.wordBreak = 'break-word';
+  labelDiv.className = 'info-label';
   labelDiv.textContent = label;
-  
+
   const valueDiv = document.createElement('div');
-  valueDiv.style.color = '#333';
-  valueDiv.style.fontSize = '11px';
-  valueDiv.style.wordBreak = 'break-word';
-  
+  valueDiv.className = isCode ? 'info-value code' : 'info-value';
+
   if (isCode) {
-    valueDiv.style.fontFamily = "'Courier New', monospace";
-    valueDiv.style.backgroundColor = '#f0f0f0';
-    valueDiv.style.padding = '2px 4px';
-    valueDiv.style.borderRadius = '3px';
-    valueDiv.style.fontSize = '10px';
     valueDiv.style.marginTop = '2px';
   }
-  
+
   valueDiv.textContent = value !== null && value !== undefined ? value.toString() : 'N/A';
-  
+
   container.appendChild(labelDiv);
   container.appendChild(valueDiv);
-  
+
   return container;
 }
 
@@ -68,11 +52,7 @@ function formatBytes(bytes) {
 // Helper function to create section separators
 function createSectionSeparator(title) {
   const separator = document.createElement('div');
-  separator.style.marginTop = '20px';
-  separator.style.marginBottom = '15px';
-  separator.style.fontWeight = 'bold';
-  separator.style.borderTop = '1px solid #ccc';
-  separator.style.paddingTop = '10px';
+  separator.className = 'section-separator';
   separator.textContent = title;
   return separator;
 }

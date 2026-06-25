@@ -49,7 +49,7 @@ A comprehensive diagnostic and debugging tool for Microsoft Office Add-ins, spec
    ```
 
 3. **Update manifest URLs**
-   - Edit `manifest.xml`
+  - Edit `config/manifest.xml`
    - Replace placeholder URLs with your hosting domain
    - For local development: `http://localhost:8080`
    - For production: `https://your-domain.com`
@@ -57,14 +57,14 @@ A comprehensive diagnostic and debugging tool for Microsoft Office Add-ins, spec
 4. **Install the add-in**
    - Open Microsoft Word
    - Go to Insert → Add-ins → Upload My Add-in
-   - Select `manifest.xml`
+  - Select `config/manifest.xml`
    - The add-in will appear in the taskpane
 
 ## 📁 Project Structure
 
 ```
 TN-OfficeDebug/
-├── manifest.xml           # Office add-in manifest configuration
+├── config/manifest.xml    # Office add-in manifest configuration
 ├── taskpane.html         # Main UI with tabbed interface
 ├── taskpane.js          # Core application logic and Office.js integration
 ├── taskpane.css         # Styling and responsive layout
@@ -80,7 +80,7 @@ TN-OfficeDebug/
 
 ### Manifest Configuration
 
-The `manifest.xml` file contains critical configuration:
+The `config/manifest.xml` file contains critical configuration:
 
 ```xml
 <!-- Update these URLs to match your hosting -->

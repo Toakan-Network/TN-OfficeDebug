@@ -7,6 +7,17 @@ const FOOTER_CC_TITLE = 'Document Reference';
 // Track AfterSave handler registration
 let afterSaveRegistered = false;
 
+function setContainerContent(container, ...nodes) {
+  if (!container) return;
+
+  container.innerHTML = '';
+  nodes.forEach(node => {
+    if (node) {
+      container.appendChild(node);
+    }
+  });
+}
+
 /**
  * Load the Actions panel UI
  */
@@ -25,10 +36,7 @@ function loadActions() {
   container.appendChild(createSectionSeparator('Footer Document Reference'));
 
   const description = document.createElement('div');
-  description.style.padding = '8px';
-  description.style.marginBottom = '10px';
-  description.style.fontSize = '11px';
-  description.style.color = '#555';
+  description.className = 'subtle-note';
   description.textContent =
     'Inserts or updates a content control in the document footer (right-aligned) with the document reference ID. Uses NetDocuments ID, iManage Document Number, or the document filename as a fallback.';
   container.appendChild(description);
@@ -56,10 +64,7 @@ function loadActions() {
   container.appendChild(createSectionSeparator('Auto-Update on Save'));
 
   const autoDesc = document.createElement('div');
-  autoDesc.style.padding = '8px';
-  autoDesc.style.marginBottom = '10px';
-  autoDesc.style.fontSize = '11px';
-  autoDesc.style.color = '#555';
+  autoDesc.className = 'subtle-note';
   autoDesc.textContent =
     'When available, automatically re-applies the document reference after each save.';
   container.appendChild(autoDesc);
@@ -105,17 +110,17 @@ async function updateDocRefStatus() {
   const statusContainer = document.getElementById('docref-status');
   if (!statusContainer) return;
 
-  statusContainer.innerHTML = '';
-  statusContainer.appendChild(createInfoRow('Status', 'Detecting document reference...'));
+  setContainerContent(statusContainer, createInfoRow('Status', 'Detecting document reference...'));
 
   try {
     const { docRef, source } = await getDocumentReference();
-    statusContainer.innerHTML = '';
-    statusContainer.appendChild(createInfoRow('Reference', docRef));
-    statusContainer.appendChild(createInfoRow('Source', source));
+    setContainerContent(
+      statusContainer,
+      createInfoRow('Reference', docRef),
+      createInfoRow('Source', source)
+    );
   } catch (error) {
-    statusContainer.innerHTML = '';
-    statusContainer.appendChild(createInfoRow('Status', 'Error: ' + error.message));
+    setContainerContent(statusContainer, createInfoRow('Status', 'Error: ' + error.message));
   }
 }
 
@@ -176,24 +181,21 @@ async function handleApplyDocRef() {
   const resultArea = document.getElementById('docref-result');
   if (!resultArea) return;
 
-  resultArea.innerHTML = '';
-  resultArea.appendChild(createInfoRow('Status', 'Applying...'));
+  setContainerContent(resultArea, createInfoRow('Status', 'Applying...'));
 
   try {
     const { docRef, source } = await applyDocumentReferenceToFooter();
-    resultArea.innerHTML = '';
 
     const successDiv = document.createElement('div');
     successDiv.className = 'success';
     successDiv.textContent = 'Footer updated with: ' + docRef;
-    resultArea.appendChild(successDiv);
-    resultArea.appendChild(createInfoRow('Source', source));
+    setContainerContent(resultArea, successDiv, createInfoRow('Source', source));
 
     // Refresh the status area too
     updateDocRefStatus();
   } catch (error) {
-    resultArea.innerHTML = '';
     window.logDebug('Error applying document reference', { error: error.message, stack: error.stack });
+    setContainerContent(resultArea);
     displaySafeError(resultArea, 'Error: ' + error.message);
   }
 }
@@ -283,6 +285,5 @@ function updateAutoSaveStatus(message) {
   const statusContainer = document.getElementById('autosave-status');
   if (!statusContainer) return;
 
-  statusContainer.innerHTML = '';
-  statusContainer.appendChild(createInfoRow('AfterSave Listener', message || 'Initializing...'));
+  setContainerContent(statusContainer, createInfoRow('AfterSave Listener', message || 'Initializing...'));
 }
